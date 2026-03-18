@@ -271,4 +271,77 @@ Pour chaque fournisseur, investiguer et documenter les points suivants avant de 
 
 ---
 
+## 8. Development on Windows
+
+### 8.1 DevTools Setup on Windows
+
+```powershell
+# Open Chrome DevTools (Windows shortcut)
+F12
+
+# If using Firefox
+Ctrl+Shift+K  # Console
+Ctrl+Shift+I  # Developer Tools (Inspector)
+
+# Network inspection is available in both browsers under "Network" tab
+```
+
+### 8.2 Testing Adapters on Windows
+
+```powershell
+# Create a test script in PowerShell
+$adapter = [YourAdapter]::new()
+$result = await $adapter.authenticate("user@example.com", "password")
+
+# Or use Node.js directly from terminal
+node --version  # Verify Node is installed
+
+# Run adapter tests
+npm test -- --testPathPattern=adapters
+
+# For debugging with VS Code
+npm run debug -- adapters/rexel.js
+```
+
+### 8.3 File Paths on Windows
+
+Always use cross-platform compatible paths:
+
+```javascript
+// ❌ WRONG — Windows-only
+const tokenPath = "C:\\Users\\electrician\\prixelek\\tokens";
+
+// ✅ CORRECT — Cross-platform
+const path = require('path');
+const tokenPath = path.join(process.env.USERPROFILE, 'prixelek', 'tokens');
+
+// Store in localStorage instead (recommended for web app)
+const tokenKey = `prixelek_token_${supplierId}`;
+localStorage.setItem(tokenKey, token);
+```
+
+### 8.4 PowerShell Commands for Development
+
+```powershell
+# Development workflow
+npm run dev                    # Start dev server
+npm run build                  # Build production
+npm run test                   # Run tests
+npm run lint                   # Check code style
+
+# Environment setup (Windows)
+$env:NODE_ENV = "development"
+$env:DEBUG = "prixelek:*"
+
+# Clear Node cache if needed
+rm -Recurse -Force node_modules
+npm install
+
+# Kill process on port 3000 if stuck
+Get-Process | Where-Object { $_.Port -eq 3000 } | Stop-Process -Force
+# Or better: netstat -ano | findstr :3000
+```
+
+---
+
 *Document version 0.1 — Les endpoints réels seront complétés après investigation dans les DevTools*

@@ -4,6 +4,27 @@
 
 ---
 
+## 🤖 Instructions pour GitHub Copilot (Copilot Instructions)
+
+**Important:** All code generated for this project must be written in **English**. French should only be used in documentation and comments explaining French business context.
+
+**Code Standards:**
+- Use English for all variable names, function names, and code comments
+- Use TypeScript or JavaScript with strict typing
+- Follow ESLint & Prettier formatting rules
+- Write modular, testable code with proper error handling
+- Include JSDoc comments for public functions
+- Implement logging at INFO and ERROR levels
+- Use async/await pattern, no callbacks or promise chains
+- All paths must work on Windows (use forward slashes or path.join for cross-platform compatibility)
+- Respect Windows line endings (CRLF) in configuration files
+
+**Module Template:** Each module must follow the adapter pattern with authentication and data fetching separated.
+
+**Testing:** Write unit tests for adapters and core services.
+
+---
+
 ## 1. Contexte & Objectifs
 
 ### 1.1 Contexte
@@ -130,3 +151,28 @@ Phase 3 — Modules V2
 ├── Module Devis (édition + PDF)
 └── Module Demande de remise fournisseur
 ```
+
+---
+
+## 11. Sécurité & Confidentialité
+
+### 11.1 Principes de base
+
+- **Stockage local uniquement** — Tous les tokens et credentials sont stockés localement sur le poste de l'utilisateur
+- **Aucun serveur centralisé** — Les prix ne sont jamais envoyés à un serveur prixElek
+- **Légitimité d'accès** — L'utilisateur utilise ses propres comptes et récupère ses propres prix négociés
+- **Chiffrement recommandé** — Envisager un chiffrement local des tokens sensibles
+
+### 11.2 Gestion des tokens
+
+- Les tokens/cookies de session doivent être stockés dans localStorage avec un prefix standardisé
+- Implémenter un système d'expiration automatique basé sur la durée de vie du token
+- Fournir un bouton "Déconnexion" pour effacer les tokens localement
+- Ne jamais logger ou afficher les tokens en clair dans la console de développement
+
+### 11.3 Respect des CGU fournisseurs
+
+- Limiter les requêtes aux articles configurés dans le catalogue de l'utilisateur
+- Implémenter des délais entre requêtes (minimum 500ms par API)
+- Respecter les headers "User-Agent" et implémenter une stratégie de backoff exponentiel en cas de rate limiting
+- Prévoir une détection des blocages (403, 429) et notifier l'utilisateur

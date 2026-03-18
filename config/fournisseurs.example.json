@@ -1,0 +1,49 @@
+{
+  "fournisseurs": [
+    {
+      "id": "rexel",
+      "nom": "Rexel",
+      "couleur": "#E30613",
+      "api": {
+        "type": "rest",
+        "base_url": "https://api.rexel.fr/v1",
+        "auth": "bearer",
+        "token": "YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "id": "sonepar",
+      "nom": "Sonepar",
+      "couleur": "#0066CC",
+      "api": {
+        "type": "rest",
+        "base_url": "https://api.sonepar.fr/v2",
+        "auth": "api_key",
+        "token": "YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "id": "yesss",
+      "nom": "YESSS Électrique",
+      "couleur": "#FFA500",
+      "api": {
+        "type": "rest",
+        "base_url": "https://api.yesss-fr.com/v1",
+        "auth": "bearer",
+        "token": "YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "id": "materielelectrique",
+      "nom": "MaterielElectrique.com",
+      "couleur": "#006699",
+      "api": {
+        "type": "rest",
+        "base_url": "https://api.materielelectrique.com",
+        "auth": "bearer",
+        "token": "YOUR_TOKEN_HERE"
+      }
+    }
+  ]
+}
+

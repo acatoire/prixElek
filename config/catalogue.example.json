@@ -1,0 +1,53 @@
+{
+  "materiaux": [
+    {
+      "id": "prise-2p-t-legrand",
+      "nom": "Prise 2P+T",
+      "marque": "Legrand",
+      "categorie": "Appareillage",
+      "references_fournisseurs": {
+        "rexel": "LEG-050430",
+        "sonepar": "LG050430",
+        "yesss": "REF-YESSS-4421",
+        "materielelectrique": "MA-LEG-050430"
+      }
+    },
+    {
+      "id": "interrupteur-va-et-vient-schneider",
+      "nom": "Interrupteur va-et-vient",
+      "marque": "Schneider",
+      "categorie": "Appareillage",
+      "references_fournisseurs": {
+        "rexel": "SCH-CCT15262",
+        "sonepar": "SN-CCT15262",
+        "yesss": null,
+        "materielelectrique": "MA-SCH-CCT15262"
+      }
+    },
+    {
+      "id": "disjoncteur-20a-hager",
+      "nom": "Disjoncteur 20A",
+      "marque": "Hager",
+      "categorie": "Protection",
+      "references_fournisseurs": {
+        "rexel": "HAG-MF220",
+        "sonepar": "HA-MF220",
+        "yesss": "HAG-MF220",
+        "materielelectrique": "MA-HAG-MF220"
+      }
+    },
+    {
+      "id": "cable-vgu-3x2-5-legrand",
+      "nom": "Câble VGU 3x2.5",
+      "marque": "Legrand",
+      "categorie": "Câbles & Conducteurs",
+      "references_fournisseurs": {
+        "rexel": "LEG-032968",
+        "sonepar": "LG-032968",
+        "yesss": "LEG-032968",
+        "materielelectrique": "MA-LEG-032968"
+      }
+    }
+  ]
+}
+
