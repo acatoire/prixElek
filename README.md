@@ -151,19 +151,21 @@ For detailed information, refer to the project documentation:
 
 ### Frontend
 
-- **Framework** — React or Vue.js (to be decided)
-- **Styling** — TailwindCSS or Bootstrap
-- **HTTP Client** — Axios or Fetch API
+- **Framework** — Vue 3 (`<script setup lang="ts">`, Composition API)
+- **State Management** — Pinia
+- **Styling** — TailwindCSS
+- **HTTP Client** — Axios
 
-### Backend (Optional in V1)
+### Backend
 
-- **Runtime** — Node.js + Express or Python + FastAPI
-- **Database** — JSON files (V1), SQLite or PostgreSQL (V2+)
+- None in V1 — all supplier calls made directly from the browser via the adapter layer
 
 ### Build & Deployment
 
-- **Bundler** — Webpack, Vite, or Parcel
-- **Hosting** — Local, Electron app, or simple HTTP server
+- **Bundler** — Vite
+- **Testing** — Vitest + @vue/test-utils (100% coverage enforced)
+- **Linting** — ESLint + Prettier
+- **Hosting** — Local (`npm run dev`) or any static host
 
 ---
 
