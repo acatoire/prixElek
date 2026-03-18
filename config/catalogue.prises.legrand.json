@@ -1,0 +1,14 @@
+leseeee{
+  "materiaux": [
+    {
+      "id": "legrand-celiane-prise-4x2p-t-compacte-precablee",
+      "nom": "Prise de courant Céliane 4x2P+T compacte précâblée standard français",
+      "marque": "Legrand",
+      "categorie": "Prise de courant",
+      "references_fournisseurs": {
+        "materielelectrique": "LEG067128"
+      }
+    }
+  ]
+}
+

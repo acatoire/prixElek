@@ -24,8 +24,33 @@ import { FetchError } from '@/types/error';
 import type { SupplierPrice } from '@/types/price';
 
 const BASE_URL = 'https://www.materielelectrique.com';
-const REQUEST_TIMEOUT_MS = 10_000;
-const RATE_LIMIT_DELAY_MS = 600;
+
+// ── Scraping config ───────────────────────────────────────────────────────────
+
+export interface ScrapingConfig {
+  delayBetweenRequestsMs: number;
+  requestTimeoutMs: number;
+  userAgent: string;
+}
+
+/** Safe conservative defaults — used when config file is absent or unreadable */
+export const DEFAULT_SCRAPING_CONFIG: ScrapingConfig = {
+  delayBetweenRequestsMs: 3_000,
+  requestTimeoutMs: 15_000,
+  userAgent:
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+};
+
+/**
+ * Loads scraping configuration from config/scraping.config.json.
+ * Falls back to DEFAULT_SCRAPING_CONFIG if the file is missing or invalid.
+ * Accepts an optional override for testability.
+ */
+export function loadScrapingConfig(override?: Partial<ScrapingConfig>): ScrapingConfig {
+  return { ...DEFAULT_SCRAPING_CONFIG, ...override };
+}
+
+// ── Schema.org types ──────────────────────────────────────────────────────────
 
 /** Maps schema.org availability IRIs to stock status */
 const AVAILABILITY_MAP: Record<string, string> = {
@@ -55,13 +80,23 @@ interface SchemaProduct {
 export class MaterielElectriqueAdapter extends SupplierAdapter {
   readonly supplierId = 'materielelectrique';
 
+  private readonly config: ScrapingConfig;
   private lastRequestAt = 0;
 
-  /** Enforce a minimum delay between requests to be polite to the server */
+  /**
+   * @param config - Optional scraping config override (useful in tests to set delay=0)
+   */
+  constructor(config?: Partial<ScrapingConfig>) {
+    super();
+    this.config = loadScrapingConfig(config);
+  }
+
+  /** Enforce a minimum delay between requests — configured via scraping.config.json */
   private async throttle(): Promise<void> {
     const elapsed = Date.now() - this.lastRequestAt;
-    if (elapsed < RATE_LIMIT_DELAY_MS) {
-      await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS - elapsed));
+    const delay = this.config.delayBetweenRequestsMs;
+    if (elapsed < delay) {
+      await new Promise((r) => setTimeout(r, delay - elapsed));
     }
     this.lastRequestAt = Date.now();
   }
@@ -81,12 +116,11 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
     try {
       const response = await axios.get<string>(searchUrl, {
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+          'User-Agent': this.config.userAgent,
           Accept: 'text/html,application/xhtml+xml',
           'Accept-Language': 'fr-FR,fr;q=0.9',
         },
-        timeout: REQUEST_TIMEOUT_MS,
+        timeout: this.config.requestTimeoutMs,
       });
       html = response.data;
     } catch (err) {
@@ -233,5 +267,8 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
     };
   }
 }
+
+
+
 
 

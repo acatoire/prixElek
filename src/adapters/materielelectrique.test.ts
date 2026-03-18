@@ -9,7 +9,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
-import { MaterielElectriqueAdapter } from './materielelectrique';
+import { MaterielElectriqueAdapter, loadScrapingConfig, DEFAULT_SCRAPING_CONFIG } from './materielelectrique';
 import { FetchError } from '@/types/error';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
@@ -96,11 +96,25 @@ describe('MaterielElectriqueAdapter', () => {
   let adapter: MaterielElectriqueAdapter;
 
   beforeAll(() => {
-    adapter = new MaterielElectriqueAdapter();
+    // delay=0 keeps tests fast; timeout small enough to catch hangs
+    adapter = new MaterielElectriqueAdapter({ delayBetweenRequestsMs: 0, requestTimeoutMs: 5_000 });
   });
 
   it('has correct supplierId', () => {
     expect(adapter.supplierId).toBe('materielelectrique');
+  });
+
+  describe('loadScrapingConfig', () => {
+    it('returns defaults when called with no overrides', () => {
+      const cfg = loadScrapingConfig();
+      expect(cfg).toEqual(DEFAULT_SCRAPING_CONFIG);
+    });
+
+    it('merges partial overrides over defaults', () => {
+      const cfg = loadScrapingConfig({ delayBetweenRequestsMs: 0 });
+      expect(cfg.delayBetweenRequestsMs).toBe(0);
+      expect(cfg.requestTimeoutMs).toBe(DEFAULT_SCRAPING_CONFIG.requestTimeoutMs);
+    });
   });
 
   describe('authenticate', () => {
@@ -381,6 +395,8 @@ describe('MaterielElectriqueAdapter', () => {
     });
   });
 });
+
+
 
 
 
