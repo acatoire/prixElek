@@ -94,7 +94,7 @@ async function main(): Promise<void> {
   }
 
   await writeCatalogue(filePath, catalogue);
-  console.log(`✅  Added to ${filePath} (${catalogue.materiaux.length} item(s) total)`);
+  console.log(`✅  Added to ${filePath} (${catalogue.length} item(s) total)`);
 }
 
 main().catch((err) => {

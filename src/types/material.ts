@@ -21,7 +21,5 @@ export interface Material {
   references_fournisseurs: SupplierReferences;
 }
 
-export interface Catalog {
-  materiaux: Material[];
-}
+export type Catalog = Material[];
 

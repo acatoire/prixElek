@@ -1,0 +1,42 @@
+name: Integration Tests
+
+# Runs real HTTP calls against materielelectrique.com.
+# Kept SEPARATE from unit tests — never blocks PR merges.
+# Triggered:
+#   - Manually via workflow_dispatch
+#   - Weekly on Sunday at 06:00 UTC (catches site API changes early)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 0'
+
+jobs:
+  integration:
+    name: Integration — materielelectrique.com
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Upload integration test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-report
+          path: |
+            tests/integration/**/*.xml
+          if-no-files-found: ignore
+

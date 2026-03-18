@@ -1,49 +1,47 @@
-{
-  "materiaux": [
-    {
-      "id": "legrand-celiane-prise-4x2p-t-compacte-precablee",
-      "nom": "Prise de courant Céliane 4x2P+T compacte précâblée standard français",
-      "marque": "Legrand",
-      "categorie": "Prise de courant",
-      "references_fournisseurs": {
-        "materielelectrique": "LEG067128"
-      }
-    },
-    {
-      "id": "prise-2p-t-celiane-surface-confort-bornes-automatiques-premontee-blanc-p-674954",
-      "nom": "Prise 2p+t céliane surface confort - bornes automatiques - prémontée blanc",
-      "marque": "Legrand",
-      "categorie": "Prise de Courant, Prise Usb",
-      "references_fournisseurs": {
-        "materielelectrique": "LEGCC0111",
-        "rexel": null,
-        "sonepar": null,
-        "yesss": null
-      }
-    },
-    {
-      "id": "prise-de-courant-legrand-celiane-2x2p-t-precablee-standard-francais-p-297670",
-      "nom": "Prise de courant Legrand Céliane 2x2P+T précâblée standard français",
-      "marque": "Legrand",
-      "categorie": "Prise de Courant, Prise Usb",
-      "references_fournisseurs": {
-        "materielelectrique": "LEG067124",
-        "rexel": null,
-        "sonepar": null,
-        "yesss": null
-      }
-    },
-    {
-      "id": "prise-de-courant-2p-t-legrand-celiane-bornes-automatique-16a-250v-standard-francais-p-7831",
-      "nom": "Prise de courant 2P+T Legrand Céliane bornes automatique 16A 250V standard français",
-      "marque": "Legrand",
-      "categorie": "Prise de Courant, Prise Usb",
-      "references_fournisseurs": {
-        "materielelectrique": "LEG067111",
-        "rexel": null,
-        "sonepar": null,
-        "yesss": null
-      }
+[
+  {
+    "id": "legrand-celiane-prise-4x2p-t-compacte-precablee",
+    "nom": "Prise de courant Céliane 4x2P+T compacte précâblée standard français",
+    "marque": "Legrand",
+    "categorie": "Prise de courant",
+    "references_fournisseurs": {
+      "materielelectrique": "LEG067128"
     }
-  ]
-}
+  },
+  {
+    "id": "prise-2p-t-celiane-surface-confort-bornes-automatiques-premontee-blanc-p-674954",
+    "nom": "Prise 2p+t céliane surface confort - bornes automatiques - prémontée blanc",
+    "marque": "Legrand",
+    "categorie": "Prise de Courant, Prise Usb",
+    "references_fournisseurs": {
+      "materielelectrique": "LEGCC0111",
+      "rexel": null,
+      "sonepar": null,
+      "yesss": null
+    }
+  },
+  {
+    "id": "prise-de-courant-legrand-celiane-2x2p-t-precablee-standard-francais-p-297670",
+    "nom": "Prise de courant Legrand Céliane 2x2P+T précâblée standard français",
+    "marque": "Legrand",
+    "categorie": "Prise de Courant, Prise Usb",
+    "references_fournisseurs": {
+      "materielelectrique": "LEG067124",
+      "rexel": null,
+      "sonepar": null,
+      "yesss": null
+    }
+  },
+  {
+    "id": "prise-de-courant-2p-t-legrand-celiane-bornes-automatique-16a-250v-standard-francais-p-7831",
+    "nom": "Prise de courant 2P+T Legrand Céliane bornes automatique 16A 250V standard français",
+    "marque": "Legrand",
+    "categorie": "Prise de Courant, Prise Usb",
+    "references_fournisseurs": {
+      "materielelectrique": "LEG067111",
+      "rexel": null,
+      "sonepar": null,
+      "yesss": null
+    }
+  }
+]

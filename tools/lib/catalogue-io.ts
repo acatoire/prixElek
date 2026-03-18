@@ -27,10 +27,19 @@ export async function readCatalogue(
   deps = { existsSync: fsExistsSync, readFile: fsReadFile }
 ): Promise<Catalog> {
   if (!deps.existsSync(filePath)) {
-    return { materiaux: [] };
+    return [];
   }
   const raw = await deps.readFile(filePath, 'utf-8');
-  return JSON.parse(raw as string) as Catalog;
+  const parsed = JSON.parse(raw as string) as unknown;
+
+  if (Array.isArray(parsed)) {
+    return parsed as Catalog;
+  }
+
+  throw new Error(
+    `[catalogue-io] Invalid catalogue file ${filePath}: ` +
+      `expected a JSON array at the root`
+  );
 }
 
 /** Writes a catalogue to disk as pretty-printed JSON. */
@@ -65,9 +74,9 @@ export function buildMaterial(product: ExtractedProduct): Material {
  * Returns whether the item was actually added.
  */
 export function addMaterialToCatalogue(catalogue: Catalog, material: Material): boolean {
-  const exists = catalogue.materiaux.some((m) => m.id === material.id);
+  const exists = catalogue.some((m) => m.id === material.id);
   if (exists) return false;
-  catalogue.materiaux.push(material);
+  catalogue.push(material);
   return true;
 }
 

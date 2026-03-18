@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "test:ci": "vitest run --coverage --reporter=verbose"
+    "test:ci": "vitest run --coverage --reporter=verbose",
+    "test:integration": "vitest run --config tests/integration/vitest.config.integration.ts"
   },
   "dependencies": {
     "axios": "^1.6.0",

@@ -67,28 +67,28 @@ describe('addMaterialToCatalogue', () => {
   let catalogue: Catalog;
 
   beforeEach(() => {
-    catalogue = { materiaux: [] };
+    catalogue = [];
   });
 
   it('adds a new material and returns true', () => {
     const added = addMaterialToCatalogue(catalogue, MATERIAL);
     expect(added).toBe(true);
-    expect(catalogue.materiaux).toHaveLength(1);
-    expect(catalogue.materiaux[0].id).toBe(MATERIAL.id);
+    expect(catalogue).toHaveLength(1);
+    expect(catalogue[0].id).toBe(MATERIAL.id);
   });
 
   it('skips a duplicate and returns false', () => {
     addMaterialToCatalogue(catalogue, MATERIAL);
     const added = addMaterialToCatalogue(catalogue, MATERIAL);
     expect(added).toBe(false);
-    expect(catalogue.materiaux).toHaveLength(1);
+    expect(catalogue).toHaveLength(1);
   });
 
   it('adds multiple distinct materials', () => {
     const other: Material = { ...MATERIAL, id: 'other-id' };
     addMaterialToCatalogue(catalogue, MATERIAL);
     addMaterialToCatalogue(catalogue, other);
-    expect(catalogue.materiaux).toHaveLength(2);
+    expect(catalogue).toHaveLength(2);
   });
 });
 
@@ -100,16 +100,25 @@ describe('readCatalogue', () => {
       existsSync: () => false,
       readFile: vi.fn(),
     });
-    expect(result).toEqual({ materiaux: [] });
+    expect(result).toEqual([]);
   });
 
   it('parses and returns the catalogue from file', async () => {
     const result = await readCatalogue('/some/path.json', {
       existsSync: () => true,
-      readFile: vi.fn().mockResolvedValue(JSON.stringify({ materiaux: [MATERIAL] })),
+      readFile: vi.fn().mockResolvedValue(JSON.stringify([MATERIAL])),
     });
-    expect(result.materiaux).toHaveLength(1);
-    expect(result.materiaux[0].id).toBe(MATERIAL.id);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(MATERIAL.id);
+  });
+
+  it('throws a clear error when file has a root object instead of an array', async () => {
+    await expect(
+      readCatalogue('/some/bad.json', {
+        existsSync: () => true,
+        readFile: vi.fn().mockResolvedValue(JSON.stringify({ version: 1, name: 'bad' })),
+      })
+    ).rejects.toThrow(/Invalid catalogue file.*expected a JSON array/);
   });
 });
 
@@ -118,12 +127,12 @@ describe('readCatalogue', () => {
 describe('writeCatalogue', () => {
   it('calls writeFile with pretty-printed JSON ending with newline', async () => {
     const writeFile = vi.fn().mockResolvedValue(undefined);
-    const cat: Catalog = { materiaux: [MATERIAL] };
+    const cat: Catalog = [MATERIAL];
     await writeCatalogue('/some/path.json', cat, { writeFile });
     const [filePath, content] = writeFile.mock.calls[0] as [string, string];
     expect(filePath).toBe('/some/path.json');
     expect(content.endsWith('\n')).toBe(true);
     const parsed = JSON.parse(content) as Catalog;
-    expect(parsed.materiaux[0].id).toBe(MATERIAL.id);
+    expect(parsed[0].id).toBe(MATERIAL.id);
   });
 });

@@ -15,8 +15,7 @@ import { FetchError } from '@/types/error';
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 
 const REF = 'LEG067128';
-const SEARCH_URL =
-  'https://www.materielelectrique.com/catalogsearch/result/';
+const SEARCH_URL = 'https://www.materielelectrique.com/catalogsearch/result/';
 
 function makeHtml(overrides?: Partial<{
   sku: string;
@@ -114,6 +113,28 @@ describe('MaterielElectriqueAdapter', () => {
       const cfg = loadScrapingConfig({ delayBetweenRequestsMs: 0 });
       expect(cfg.delayBetweenRequestsMs).toBe(0);
       expect(cfg.requestTimeoutMs).toBe(DEFAULT_SCRAPING_CONFIG.requestTimeoutMs);
+    });
+  });
+
+  describe('getBaseUrl (via getPrice URL)', () => {
+    it('uses the direct URL in Node (no window object)', async () => {
+      // Adapter tests run in Node environment — window is undefined
+      const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
+      await adapter.getPrice(REF).catch(() => {/* ignore parse result */});
+      const calledUrl = spy.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('materielelectrique.com');
+      expect(calledUrl).not.toContain('/proxy/');
+      spy.mockRestore();
+    });
+
+    it('uses the proxy URL when window is defined (browser)', async () => {
+      vi.stubGlobal('window', {});
+      const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
+      await adapter.getPrice(REF).catch(() => {/* ignore parse result */});
+      const calledUrl = spy.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('/proxy/materielelectrique');
+      spy.mockRestore();
+      vi.unstubAllGlobals();
     });
   });
 

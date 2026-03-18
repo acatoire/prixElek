@@ -25,6 +25,20 @@ import type { SupplierPrice } from '@/types/price';
 
 const BASE_URL = 'https://www.materielelectrique.com';
 
+/**
+ * When running in the browser, requests to materielelectrique.com are
+ * blocked by CORS. We route them through the Vite dev-server proxy instead:
+ *   /proxy/materielelectrique/... → https://www.materielelectrique.com/...
+ *
+ * In Node (CLI tools, tests), we call the site directly.
+ */
+function getBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return '/proxy/materielelectrique';
+  }
+  return BASE_URL;
+}
+
 // ── Scraping config ───────────────────────────────────────────────────────────
 
 export interface ScrapingConfig {
@@ -110,7 +124,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
   async getPrice(reference: string): Promise<SupplierPrice> {
     await this.throttle();
 
-    const searchUrl = `${BASE_URL}/catalogsearch/result/?q=${encodeURIComponent(reference)}`;
+    const searchUrl = `${getBaseUrl()}/catalogsearch/result/?q=${encodeURIComponent(reference)}`;
     let html: string;
 
     try {
