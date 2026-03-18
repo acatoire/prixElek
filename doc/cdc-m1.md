@@ -46,6 +46,12 @@ Le catalogue est maintenu manuellement par l'utilisateur dans un fichier `catalo
 - `categorie` : catégorie libre (pour filtrage futur)
 - `references_fournisseurs` : objet clé/valeur, une entrée par fournisseur configuré (valeur `null` si non référencé chez ce fournisseur)
 
+Premiers fournisseurs a prendre en compte par defaut:
+- Rexel https://www.rexel.fr
+- Sonepar https://www.sonepar.fr
+- Yess électrique https://www.yesss-fr.com
+- matériel électrique.com https://www.materielelectrique.com
+
 ### 3 Configuration des fournisseurs
 
 Les fournisseurs sont configurés dans un fichier `fournisseurs.json` séparé.
