@@ -10,7 +10,7 @@ import { PriceTable } from '@/components/PriceTable';
 
 export function App(): React.ReactElement {
   const materials = useMemo(() => loadAllMaterials(), []);
-  const { prices, scanning, startScan } = usePriceScan();
+  const { prices, scanning, startScan, stopScan } = usePriceScan();
   const handleScan = useCallback(() => startScan(materials), [startScan, materials]);
 
   return (
@@ -33,6 +33,7 @@ export function App(): React.ReactElement {
           prices={prices}
           scanning={scanning}
           onScan={handleScan}
+          onStop={stopScan}
         />
       </main>
     </div>

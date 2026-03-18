@@ -31,12 +31,18 @@ export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactEl
   }
 
   if (cell.status === 'error') {
+    const msg = cell.errorMessage ?? 'Indisponible';
+    // Shorten long technical messages for display
+    const shortMsg = msg.length > 60 ? msg.slice(0, 57) + '…' : msg;
     return (
       <span
-        className="text-red-500 text-xs font-medium"
-        title={cell.errorMessage ?? undefined}
+        className="flex flex-col items-end gap-0.5"
+        title={msg}
       >
-        ⚠ Indisponible
+        <span className="text-red-500 text-xs font-medium">⚠ Erreur</span>
+        <span className="text-red-400 text-xs leading-tight max-w-[180px] text-right">
+          {shortMsg}
+        </span>
       </span>
     );
   }

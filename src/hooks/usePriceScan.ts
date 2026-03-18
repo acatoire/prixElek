@@ -8,7 +8,7 @@
  * (respecting the configured delay to avoid being banned).
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { MaterielElectriqueAdapter } from '@/adapters/materielelectrique';
 import type { Material } from '@/types/material';
 import type { PriceCell, PriceMatrix } from '@/types/price';
@@ -30,11 +30,13 @@ interface UsePriceScanReturn {
   prices: PriceMatrix;
   scanning: boolean;
   startScan: (materials: Material[]) => Promise<void>;
+  stopScan: () => void;
 }
 
 export function usePriceScan(): UsePriceScanReturn {
   const [prices, setPrices] = useState<PriceMatrix>({});
   const [scanning, setScanning] = useState(false);
+  const abortRef = useRef(false);
 
   const setCell = useCallback((materialId: string, cell: PriceCell) => {
     setPrices((prev) => ({
@@ -46,9 +48,14 @@ export function usePriceScan(): UsePriceScanReturn {
     }));
   }, []);
 
+  const stopScan = useCallback(() => {
+    abortRef.current = true;
+  }, []);
+
   const startScan = useCallback(
     async (materials: Material[]) => {
       if (scanning) return;
+      abortRef.current = false;
       setScanning(true);
 
       // Reset all to loading
@@ -63,6 +70,24 @@ export function usePriceScan(): UsePriceScanReturn {
       const adapter = new MaterielElectriqueAdapter();
 
       for (const material of materials) {
+        // Check if user requested abort before each request
+        if (abortRef.current) {
+          // Mark remaining loading cells as cancelled
+          setPrices((prev) => {
+            const next = { ...prev };
+            for (const m of materials) {
+              if (next[m.id]?.[SUPPLIER_ID]?.status === 'loading') {
+                next[m.id] = {
+                  ...next[m.id],
+                  [SUPPLIER_ID]: { status: 'idle', data: null, errorMessage: null },
+                };
+              }
+            }
+            return next;
+          });
+          break;
+        }
+
         const ref = material.references_fournisseurs[SUPPLIER_ID];
         if (!ref) {
           setCell(material.id, {
@@ -74,7 +99,7 @@ export function usePriceScan(): UsePriceScanReturn {
         }
 
         try {
-          const price = await adapter.getPrice(ref);
+          const price = await adapter.getPrice(ref, material.id);
           setCell(material.id, { status: 'success', data: price, errorMessage: null });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -87,6 +112,6 @@ export function usePriceScan(): UsePriceScanReturn {
     [scanning, setCell]
   );
 
-  return { prices, scanning, startScan };
+  return { prices, scanning, startScan, stopScan };
 }
 

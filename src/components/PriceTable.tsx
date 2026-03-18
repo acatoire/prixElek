@@ -20,6 +20,7 @@ interface PriceTableProps {
   prices: PriceMatrix;
   scanning: boolean;
   onScan: () => void;
+  onStop: () => void;
 }
 
 export function PriceTable({
@@ -27,6 +28,7 @@ export function PriceTable({
   prices,
   scanning,
   onScan,
+  onStop,
 }: PriceTableProps): React.ReactElement {
   const lastUpdated = Object.values(prices)
     .flatMap((row) => Object.values(row))
@@ -54,29 +56,42 @@ export function PriceTable({
           )}
         </div>
 
-        <button
-          onClick={onScan}
-          disabled={scanning}
-          className={[
-            'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
-            'transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400',
-            scanning
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-orange-500 hover:bg-orange-600 text-white cursor-pointer',
-          ].join(' ')}
-        >
-          {scanning ? (
-            <>
-              <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
-              Scan en cours…
-            </>
-          ) : (
-            <>
-              <span>🔍</span>
-              Actualiser les prix
-            </>
+        <div className="flex items-center gap-2">
+          {scanning && (
+            <button
+              onClick={onStop}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer
+                transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
+            >
+              <span>⏹</span>
+              Arrêter
+            </button>
           )}
-        </button>
+          <button
+            onClick={onScan}
+            disabled={scanning}
+            className={[
+              'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
+              'transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400',
+              scanning
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-orange-500 hover:bg-orange-600 text-white cursor-pointer',
+            ].join(' ')}
+          >
+            {scanning ? (
+              <>
+                <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
+                Scan en cours…
+              </>
+            ) : (
+              <>
+                <span>🔍</span>
+                Actualiser les prix
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── Table ── */}

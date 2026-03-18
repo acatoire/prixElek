@@ -117,18 +117,28 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
 
   /**
    * Fetches the product page for the given reference and parses the JSON-LD block.
-   * The site's search URL pattern: /catalogsearch/result/?q={reference}
-   * For direct product pages: /{slug}-p-{id}.html
-   * We use the search URL since we only have the reference.
+   *
+   * @param reference - The supplier SKU (e.g. "LEG067128") used to match the JSON-LD block.
+   * @param pageSlug  - Optional URL slug of the product page (e.g. the catalogue material id
+   *                    "prise-de-courant-legrand-celiane-4x2p-t-p-297691").
+   *                    When provided the adapter fetches /{pageSlug}.html directly, which is
+   *                    far more reliable than the site's search endpoint.
+   *                    Falls back to the search URL when absent.
    */
-  async getPrice(reference: string): Promise<SupplierPrice> {
+  async getPrice(reference: string, pageSlug?: string): Promise<SupplierPrice> {
     await this.throttle();
 
-    const searchUrl = `${getBaseUrl()}/catalogsearch/result/?q=${encodeURIComponent(reference)}`;
+    // Use the direct product page URL when the slug contains the PrestaShop product-id
+    // pattern (-p-<digits>), which means it was scraped and is reliable.
+    // Fall back to the site's search for manually-entered slugs without a numeric id.
+    const isRealSlug = pageSlug && /-p-\d+$/.test(pageSlug);
+    const productUrl = isRealSlug
+      ? `${getBaseUrl()}/${pageSlug}.html`
+      : `${getBaseUrl()}/?product_search[term]=${encodeURIComponent(reference)}`;
     let html: string;
 
     try {
-      const response = await axios.get<string>(searchUrl, {
+      const response = await axios.get<string>(productUrl, {
         headers: {
           'User-Agent': this.config.userAgent,
           Accept: 'text/html,application/xhtml+xml',
@@ -206,7 +216,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
     throw new FetchError({
       code: 'NOT_FOUND',
       supplierId: this.supplierId,
-      message: `Reference ${reference} not found in JSON-LD on search page`,
+      message: `Référence ${reference} introuvable sur la page (JSON-LD absent ou SKU non concordant)`,
       retryable: false,
     });
   }

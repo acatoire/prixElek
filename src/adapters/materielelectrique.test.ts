@@ -15,7 +15,11 @@ import { FetchError } from '@/types/error';
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 
 const REF = 'LEG067128';
-const SEARCH_URL = 'https://www.materielelectrique.com/catalogsearch/result/';
+const REAL_SLUG = 'prise-de-courant-legrand-celiane-4x2p-t-p-297691';
+// New search URL: /?product_search[term]=<ref>
+const SEARCH_BASE = 'https://www.materielelectrique.com/';
+// Direct product page URL pattern
+const DIRECT_URL = `https://www.materielelectrique.com/${REAL_SLUG}.html`;
 
 function makeHtml(overrides?: Partial<{
   sku: string;
@@ -81,7 +85,17 @@ afterAll(() => server.close());
 
 function mockSearch(html: string, status = 200): void {
   server.use(
-    http.get(SEARCH_URL, () =>
+    http.get(SEARCH_BASE, () =>
+      status === 200
+        ? HttpResponse.text(html, { status: 200 })
+        : new HttpResponse(null, { status })
+    )
+  );
+}
+
+function mockDirect(html: string, status = 200): void {
+  server.use(
+    http.get(DIRECT_URL, () =>
       status === 200
         ? HttpResponse.text(html, { status: 200 })
         : new HttpResponse(null, { status })
@@ -127,6 +141,22 @@ describe('MaterielElectriqueAdapter', () => {
       spy.mockRestore();
     });
 
+    it('uses the direct product page URL when a valid pageSlug is provided', async () => {
+      const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
+      await adapter.getPrice(REF, REAL_SLUG).catch(() => {});
+      const calledUrl = spy.mock.calls[0][0] as string;
+      expect(calledUrl).toContain(`/${REAL_SLUG}.html`);
+      spy.mockRestore();
+    });
+
+    it('falls back to search URL when pageSlug has no -p-<digits> suffix', async () => {
+      const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
+      await adapter.getPrice(REF, 'some-manual-slug-without-id').catch(() => {});
+      const calledUrl = spy.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('product_search');
+      spy.mockRestore();
+    });
+
     it('uses the proxy URL when window is defined (browser)', async () => {
       vi.stubGlobal('window', {});
       const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
@@ -146,9 +176,9 @@ describe('MaterielElectriqueAdapter', () => {
   });
 
   describe('getPrice — happy path', () => {
-    it('parses price from JSON-LD for exact SKU match', async () => {
-      mockSearch(makeHtml());
-      const price = await adapter.getPrice(REF);
+    it('parses price from JSON-LD for exact SKU match (direct page URL)', async () => {
+      mockDirect(makeHtml());
+      const price = await adapter.getPrice(REF, REAL_SLUG);
       expect(price.prix_ht).toBe(18.64);
       expect(price.unite).toBe('pièce');
       expect(price.stock).toBe(1);
@@ -156,40 +186,46 @@ describe('MaterielElectriqueAdapter', () => {
     });
 
     it('matches by mpn when sku does not match', async () => {
-      mockSearch(makeHtml({ sku: 'SOMETHING-ELSE', mpn: '067128' }));
-      const price = await adapter.getPrice('067128');
+      mockDirect(makeHtml({ sku: 'SOMETHING-ELSE', mpn: '067128' }));
+      const price = await adapter.getPrice('067128', REAL_SLUG);
       expect(price.prix_ht).toBe(18.64);
     });
 
     it('handles LimitedAvailability as in-stock', async () => {
-      mockSearch(makeHtml({ availability: 'https://schema.org/LimitedAvailability' }));
-      const price = await adapter.getPrice(REF);
+      mockDirect(makeHtml({ availability: 'https://schema.org/LimitedAvailability' }));
+      const price = await adapter.getPrice(REF, REAL_SLUG);
       expect(price.stock).toBe(1);
     });
 
     it('handles OutOfStock → stock 0', async () => {
-      mockSearch(makeHtml({ availability: 'https://schema.org/OutOfStock' }));
-      const price = await adapter.getPrice(REF);
+      mockDirect(makeHtml({ availability: 'https://schema.org/OutOfStock' }));
+      const price = await adapter.getPrice(REF, REAL_SLUG);
       expect(price.stock).toBe(0);
     });
 
     it('handles BackOrder → stock 0', async () => {
-      mockSearch(makeHtml({ availability: 'https://schema.org/BackOrder' }));
-      const price = await adapter.getPrice(REF);
+      mockDirect(makeHtml({ availability: 'https://schema.org/BackOrder' }));
+      const price = await adapter.getPrice(REF, REAL_SLUG);
       expect(price.stock).toBe(0);
     });
 
     it('handles unknown availability → stock 0', async () => {
-      mockSearch(makeHtml({ availability: 'https://schema.org/Unknown' }));
-      const price = await adapter.getPrice(REF);
+      mockDirect(makeHtml({ availability: 'https://schema.org/Unknown' }));
+      const price = await adapter.getPrice(REF, REAL_SLUG);
       expect(price.stock).toBe(0);
+    });
+
+    it('parses price via fallback search URL when no pageSlug', async () => {
+      mockSearch(makeHtml());
+      const price = await adapter.getPrice(REF);
+      expect(price.prix_ht).toBe(18.64);
     });
   });
 
   describe('getPrice — error cases', () => {
     it('throws NOT_FOUND when reference is absent from JSON-LD', async () => {
-      mockSearch(makeHtml({ sku: 'OTHER-REF', mpn: 'OTHER' }));
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      mockDirect(makeHtml({ sku: 'OTHER-REF', mpn: 'OTHER' }));
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'NOT_FOUND',
         supplierId: 'materielelectrique',
         retryable: false,
@@ -197,29 +233,29 @@ describe('MaterielElectriqueAdapter', () => {
     });
 
     it('throws PARSE_ERROR when no JSON-LD blocks present', async () => {
-      mockSearch('<html><body>no structured data</body></html>');
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      mockDirect('<html><body>no structured data</body></html>');
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'PARSE_ERROR',
       });
     });
 
     it('throws PARSE_ERROR when product has no offers block', async () => {
-      mockSearch(makeHtml({ hasOffer: false }));
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      mockDirect(makeHtml({ hasOffer: false }));
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'PARSE_ERROR',
       });
     });
 
     it('throws PARSE_ERROR when price is not a number', async () => {
-      mockSearch(makeHtml({ price: 'contact us' }));
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      mockDirect(makeHtml({ price: 'contact us' }));
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'PARSE_ERROR',
       });
     });
 
     it('throws RATE_LIMIT on HTTP 429', async () => {
-      mockSearch('', 429);
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      mockDirect('', 429);
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'RATE_LIMIT',
         retryable: true,
         statusCode: 429,
@@ -227,8 +263,8 @@ describe('MaterielElectriqueAdapter', () => {
     });
 
     it('throws NETWORK_ERROR on HTTP 503', async () => {
-      mockSearch('', 503);
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      mockDirect('', 503);
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'NETWORK_ERROR',
         retryable: true,
         statusCode: 503,
@@ -237,9 +273,9 @@ describe('MaterielElectriqueAdapter', () => {
 
     it('throws NETWORK_ERROR on connection failure', async () => {
       server.use(
-        http.get(SEARCH_URL, () => HttpResponse.error())
+        http.get(DIRECT_URL, () => HttpResponse.error())
       );
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'NETWORK_ERROR',
         retryable: true,
       });
@@ -248,7 +284,7 @@ describe('MaterielElectriqueAdapter', () => {
     it('throws NETWORK_ERROR when a non-Axios error is thrown', async () => {
       // Bypass MSW — spy on axios.get directly to throw a plain (non-Axios) Error
       const spy = vi.spyOn(axios, 'get').mockRejectedValueOnce(new TypeError('plain non-axios error'));
-      await expect(adapter.getPrice(REF)).rejects.toMatchObject({
+      await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'NETWORK_ERROR',
         retryable: true,
       });

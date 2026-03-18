@@ -47,7 +47,8 @@ describe('PriceCellDisplay', () => {
         cell={{ status: 'error', data: null, errorMessage: 'Network fail' }}
       />
     );
-    expect(screen.getByText(/Indisponible/)).toBeInTheDocument();
+    expect(screen.getByText(/Erreur/)).toBeInTheDocument();
+    expect(screen.getByText('Network fail')).toBeInTheDocument();
   });
 
   it('renders price and En stock when in stock', () => {
