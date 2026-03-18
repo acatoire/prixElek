@@ -259,14 +259,53 @@ API officiel (Sonepar en particulier semble ouvert à cette démarche).
 
 ---
 
-## 7. Travail de découverte à réaliser (TODO)
+## 7. Endpoints confirmés & TODO
+
+### ✅ MaterielElectrique.com — CONFIRMED (2026-03-18)
+
+**Strategy:** HTML parsing — no authentication required. Prices are public.
+
+**Method:** `GET https://www.materielelectrique.com/catalogsearch/result/?q={reference}`
+
+**Price source:** `<script type="application/ld+json">` — schema.org `Product` block embedded in the HTML.
+
+```json
+{
+  "@type": "Product",
+  "sku": "LEG067128",
+  "mpn": "067128",
+  "offers": {
+    "@type": "Offer",
+    "price": 18.64,
+    "priceCurrency": "EUR",
+    "availability": "https://schema.org/InStock"
+  }
+}
+```
+
+**Matching logic:** normalize ref to `[A-Z0-9]` uppercase, compare against `sku` and `mpn` fields.
+
+**Adapter:** `src/adapters/materielelectrique.ts`
+
+**Availability mapping:**
+
+| Schema.org IRI | Meaning | stock value |
+|---|---|---|
+| `InStock` | Available | 1 |
+| `LimitedAvailability` | Low stock | 1 |
+| `OutOfStock` | Unavailable | 0 |
+| `BackOrder` | Orderable, delayed | 0 |
+
+---
+
+## 8. Travail de découverte à réaliser (TODO)
 
 Pour chaque fournisseur, investiguer et documenter les points suivants avant de coder l'adapter :
 
+- [x] **MaterielElectrique.com** — ✅ JSON-LD parsing, no auth needed (`src/adapters/materielelectrique.ts`)
 - [ ] **Rexel** — Identifier endpoint auth + endpoint prix par référence
 - [ ] **Sonepar** — Identifier endpoint auth + endpoint prix par référence
 - [ ] **YESSS** — Identifier endpoint auth + endpoint prix par référence
-- [ ] **MaterielElectrique.com** — Vérifier si prix visibles sans connexion (parsing HTML possible en fallback)
 - [ ] Pour chaque site : noter les headers obligatoires, le format de référence attendu, la structure JSON de réponse
 
 ---

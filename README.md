@@ -151,9 +151,9 @@ For detailed information, refer to the project documentation:
 
 ### Frontend
 
-- **Framework** — Vue 3 (`<script setup lang="ts">`, Composition API)
-- **State Management** — Pinia
-- **Styling** — TailwindCSS
+- **Framework** — React 18 (functional components, hooks)
+- **UI Components** — [Untitled UI React](https://www.untitledui.com/react) — pre-built Table, Badge, Button, Input, Spinner components
+- **Styling** — TailwindCSS (layout & spacing only)
 - **HTTP Client** — Axios
 
 ### Backend
@@ -163,7 +163,7 @@ For detailed information, refer to the project documentation:
 ### Build & Deployment
 
 - **Bundler** — Vite
-- **Testing** — Vitest + @vue/test-utils (100% coverage enforced)
+- **Testing** — Vitest + @testing-library/react + MSW (100% coverage enforced)
 - **Linting** — ESLint + Prettier
 - **Hosting** — Local (`npm run dev`) or any static host
 

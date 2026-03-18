@@ -1,0 +1,237 @@
+/**
+ * src/adapters/materielelectrique.ts
+ *
+ * Adapter for materielelectrique.com.
+ *
+ * Strategy: prices are publicly visible without login.
+ * The product page embeds a JSON-LD <script type="application/ld+json"> block
+ * with full schema.org/Product + Offer data including price, currency,
+ * availability and EAN. We fetch the HTML and parse that block.
+ *
+ * URL pattern: https://www.materielelectrique.com/search?q={reference}
+ * redirects to the product page, or returns a listing page from which
+ * we pick the first exact-SKU match.
+ *
+ * Confirmed from probe on 2026-03-18:
+ *   JSON-LD offers.price       → 18.64
+ *   JSON-LD offers.availability → "https://schema.org/InStock"
+ *   JSON-LD sku                → "LEG067128"
+ */
+
+import axios from 'axios';
+import { SupplierAdapter } from './base';
+import { FetchError } from '@/types/error';
+import type { SupplierPrice } from '@/types/price';
+
+const BASE_URL = 'https://www.materielelectrique.com';
+const REQUEST_TIMEOUT_MS = 10_000;
+const RATE_LIMIT_DELAY_MS = 600;
+
+/** Maps schema.org availability IRIs to stock status */
+const AVAILABILITY_MAP: Record<string, string> = {
+  'https://schema.org/InStock': 'InStock',
+  'https://schema.org/OutOfStock': 'OutOfStock',
+  'https://schema.org/LimitedAvailability': 'LimitedAvailability',
+  'https://schema.org/BackOrder': 'BackOrder',
+  'https://schema.org/PreOrder': 'PreOrder',
+};
+
+interface SchemaOffer {
+  '@type': string;
+  price?: number;
+  priceCurrency?: string;
+  availability?: string;
+  gtin13?: string;
+}
+
+interface SchemaProduct {
+  '@type': string;
+  sku?: string;
+  mpn?: string;
+  name?: string;
+  offers?: SchemaOffer;
+}
+
+export class MaterielElectriqueAdapter extends SupplierAdapter {
+  readonly supplierId = 'materielelectrique';
+
+  private lastRequestAt = 0;
+
+  /** Enforce a minimum delay between requests to be polite to the server */
+  private async throttle(): Promise<void> {
+    const elapsed = Date.now() - this.lastRequestAt;
+    if (elapsed < RATE_LIMIT_DELAY_MS) {
+      await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS - elapsed));
+    }
+    this.lastRequestAt = Date.now();
+  }
+
+  /**
+   * Fetches the product page for the given reference and parses the JSON-LD block.
+   * The site's search URL pattern: /catalogsearch/result/?q={reference}
+   * For direct product pages: /{slug}-p-{id}.html
+   * We use the search URL since we only have the reference.
+   */
+  async getPrice(reference: string): Promise<SupplierPrice> {
+    await this.throttle();
+
+    const searchUrl = `${BASE_URL}/catalogsearch/result/?q=${encodeURIComponent(reference)}`;
+    let html: string;
+
+    try {
+      const response = await axios.get<string>(searchUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'fr-FR,fr;q=0.9',
+        },
+        timeout: REQUEST_TIMEOUT_MS,
+      });
+      html = response.data;
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 429) {
+          throw new FetchError({
+            code: 'RATE_LIMIT',
+            supplierId: this.supplierId,
+            message: 'Rate limited by materielelectrique.com',
+            statusCode: 429,
+            retryable: true,
+          });
+        }
+        throw new FetchError({
+          code: 'NETWORK_ERROR',
+          supplierId: this.supplierId,
+          message: err.message,
+          statusCode: status,
+          retryable: true,
+        });
+      }
+      throw new FetchError({
+        code: 'NETWORK_ERROR',
+        supplierId: this.supplierId,
+        message: String(err),
+        retryable: true,
+      });
+    }
+
+    return this.parseHtml(html, reference);
+  }
+
+  /**
+   * Parses the first schema.org/Product JSON-LD block from the HTML.
+   * Looks for an item whose sku or mpn matches the reference (case-insensitive).
+   */
+  parseHtml(html: string, reference: string): SupplierPrice {
+    const blocks = html.match(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi
+    );
+
+    if (!blocks || blocks.length === 0) {
+      throw new FetchError({
+        code: 'PARSE_ERROR',
+        supplierId: this.supplierId,
+        message: 'No JSON-LD blocks found on page',
+        retryable: false,
+      });
+    }
+
+    const normalizedRef = reference.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+
+    for (const block of blocks) {
+      const jsonText = block.replace(/<\/?script[^>]*>/gi, '').trim();
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch {
+        continue;
+      }
+
+      const product = this.findMatchingProduct(parsed, normalizedRef);
+      if (product) {
+        return this.extractPrice(product);
+      }
+    }
+
+    throw new FetchError({
+      code: 'NOT_FOUND',
+      supplierId: this.supplierId,
+      message: `Reference ${reference} not found in JSON-LD on search page`,
+      retryable: false,
+    });
+  }
+
+  /** Recursively search a parsed JSON-LD object for a Product matching the reference */
+  private findMatchingProduct(
+    node: unknown,
+    normalizedRef: string
+  ): SchemaProduct | null {
+    if (!node || typeof node !== 'object') return null;
+
+    const obj = node as Record<string, unknown>;
+
+    // Direct Product match
+    if (obj['@type'] === 'Product') {
+      const rawSku = obj['sku'] !== undefined ? String(obj['sku']) : '';
+      const rawMpn = obj['mpn'] !== undefined ? String(obj['mpn']) : '';
+      const sku = rawSku.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const mpn = rawMpn.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      if (sku === normalizedRef || mpn === normalizedRef) {
+        return obj as SchemaProduct;
+      }
+    }
+
+    // Recurse into arrays and nested objects
+    for (const value of Object.values(obj)) {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const found = this.findMatchingProduct(item, normalizedRef);
+          if (found) return found;
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        const found = this.findMatchingProduct(value, normalizedRef);
+        if (found) return found;
+      }
+    }
+
+    return null;
+  }
+
+  /** Extract a SupplierPrice from a confirmed schema.org/Product node */
+  private extractPrice(product: SchemaProduct): SupplierPrice {
+    const offer = product.offers;
+    if (!offer) {
+      throw new FetchError({
+        code: 'PARSE_ERROR',
+        supplierId: this.supplierId,
+        message: 'Product found but has no offers block',
+        retryable: false,
+      });
+    }
+
+    const price = typeof offer.price === 'number' ? offer.price : null;
+    if (price === null) {
+      throw new FetchError({
+        code: 'PARSE_ERROR',
+        supplierId: this.supplierId,
+        message: 'Offer found but price is missing or not a number',
+        retryable: false,
+      });
+    }
+
+    const availabilityIri = offer.availability ?? '';
+    const availability = AVAILABILITY_MAP[availabilityIri] ?? 'Unknown';
+    const inStock = availability === 'InStock' || availability === 'LimitedAvailability';
+
+    return {
+      prix_ht: price,
+      stock: inStock ? 1 : 0,
+      unite: 'pièce',
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+}
+
+
