@@ -135,7 +135,7 @@ describe('usePriceScan', () => {
     await act(async () => {
       await result.current.startScan(
         [MATERIAL_WITH_REF, MATERIAL_B],
-        '',
+        undefined,
         new Set(['mat-1'])
       );
     });

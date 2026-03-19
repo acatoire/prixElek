@@ -35,8 +35,12 @@ export function App(): React.ReactElement {
 
   // Pass rexel token and selected ids to scan — only fetch prices for order items
   const handleScan = useCallback(
-    () => startScan(materials, rexelAuth.token, selectedIds.size > 0 ? selectedIds : undefined),
-    [startScan, materials, rexelAuth.token, selectedIds]
+    () => startScan(
+      materials,
+      rexelAuth.isConnected ? { token: rexelAuth.token, branchId: rexelAuth.branchId } : undefined,
+      selectedIds.size > 0 ? selectedIds : undefined
+    ),
+    [startScan, materials, rexelAuth.isConnected, rexelAuth.token, rexelAuth.branchId, selectedIds]
   );
 
   // Edit modal
@@ -158,7 +162,8 @@ export function App(): React.ReactElement {
       {showRexelModal && (
         <RexelLoginModal
           currentToken={rexelAuth.token}
-          onSave={rexelAuth.saveToken}
+          currentBranchId={rexelAuth.branchId}
+          onSave={rexelAuth.saveCredentials}
           onClear={rexelAuth.clearToken}
           onClose={() => setShowRexelModal(false)}
         />
