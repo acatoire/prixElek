@@ -10,6 +10,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
 import { RexelAdapter, decodeRexelToken, extractAccountId, extractWebshopId, extractApiKey } from './rexel';
+import { FetchError } from '@/types/error';
 
 const SKU = '70569480';
 const API_URL = 'https://eu.dif.rexel.com/web/api/v3/product/priceandavailability';
@@ -30,6 +31,7 @@ function makeJwt(accountNumber: string, webshopId = 'FRW', apiKey = 'test-api-ke
 const ACCOUNT_ID = '6440598';
 const TOKEN = makeJwt(ACCOUNT_ID);
 const BRANCH_ID = '4413';
+const CREDS = { token: TOKEN, branchId: BRANCH_ID, zipcode: '44880', city: 'SAUTRON' };
 
 function makeResponse(overrides?: {
   sku?: string;
@@ -70,7 +72,7 @@ function mockApi(body: object, status = 200) {
 
 describe('RexelAdapter', () => {
   let adapter: RexelAdapter;
-  beforeAll(() => { adapter = new RexelAdapter({ token: TOKEN, branchId: BRANCH_ID }); });
+  beforeAll(() => { adapter = new RexelAdapter(CREDS); });
 
   // ── JWT helpers ─────────────────────────────────────────────────────────────
 
@@ -127,13 +129,18 @@ describe('RexelAdapter', () => {
   });
 
   it('throws AUTH_ERROR when no token provided', async () => {
-    const empty = new RexelAdapter({ token: '', branchId: BRANCH_ID });
+    const empty = new RexelAdapter({ token: '', branchId: BRANCH_ID, zipcode: '44880', city: 'SAUTRON' });
     await expect(empty.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR' });
   });
 
   it('throws AUTH_ERROR when token has no accountId', async () => {
     const noAccount = `header.${Buffer.from('{"exp":9999}').toString('base64url')}.sig`;
-    const a = new RexelAdapter({ token: noAccount, branchId: BRANCH_ID });
+    const a = new RexelAdapter({ token: noAccount, branchId: BRANCH_ID, zipcode: '44880', city: 'SAUTRON' });
+    await expect(a.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR' });
+  });
+
+  it('throws AUTH_ERROR when branchId is missing', async () => {
+    const a = new RexelAdapter({ token: TOKEN, branchId: '', zipcode: '44880', city: 'SAUTRON' });
     await expect(a.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR' });
   });
 

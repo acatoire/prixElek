@@ -33,14 +33,16 @@ export function App(): React.ReactElement {
   // Tabs
   const [activeTab, setActiveTab] = useState<Tab>('catalogue');
 
-  // Pass rexel token and selected ids to scan — only fetch prices for order items
+  // Pass rexel credentials and selected ids to scan — only fetch prices for order items
   const handleScan = useCallback(
     () => startScan(
       materials,
-      rexelAuth.isConnected ? { token: rexelAuth.token, branchId: rexelAuth.branchId } : undefined,
+      rexelAuth.isConnected
+        ? { token: rexelAuth.token, branchId: rexelAuth.branchId, zipcode: rexelAuth.zipcode, city: rexelAuth.city }
+        : undefined,
       selectedIds.size > 0 ? selectedIds : undefined
     ),
-    [startScan, materials, rexelAuth.isConnected, rexelAuth.token, rexelAuth.branchId, selectedIds]
+    [startScan, materials, rexelAuth, selectedIds]
   );
 
   // Edit modal
@@ -163,6 +165,8 @@ export function App(): React.ReactElement {
         <RexelLoginModal
           currentToken={rexelAuth.token}
           currentBranchId={rexelAuth.branchId}
+          currentZipcode={rexelAuth.zipcode}
+          currentCity={rexelAuth.city}
           onSave={rexelAuth.saveCredentials}
           onClear={rexelAuth.clearToken}
           onClose={() => setShowRexelModal(false)}

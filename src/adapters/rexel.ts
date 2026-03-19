@@ -54,12 +54,13 @@ export function extractApiKey(jwt: string): string {
 
 /**
  * Everything needed to call the price API.
- * branchId is the user's local Rexel agency code (e.g. "4413").
- * It is NOT in the JWT — the user must supply it (shown in the login modal).
+ * branchId, zipcode and city are the user's local agency info, NOT in the JWT.
  */
 export interface RexelCredentials {
   token: string;
   branchId: string;
+  zipcode: string;
+  city: string;
 }
 
 // ── Response shape (minimal) ──────────────────────────────────────────────────
@@ -91,12 +92,16 @@ export class RexelAdapter extends SupplierAdapter {
   private readonly token: string;
   private readonly accountId: string;
   private readonly branchId: string;
+  private readonly zipcode: string;
+  private readonly city: string;
 
   constructor(credentials: RexelCredentials) {
     super();
     this.token = credentials.token;
     this.accountId = extractAccountId(credentials.token);
     this.branchId = credentials.branchId;
+    this.zipcode = credentials.zipcode;
+    this.city = credentials.city;
   }
 
   async getPrice(reference: string): Promise<SupplierPrice> {
@@ -133,7 +138,10 @@ export class RexelAdapter extends SupplierAdapter {
           accountId: this.accountId,
           branchId: this.branchId,
           pickupOptions: { branchCode: this.branchId },
-          deliveryOptions: { branchCode: this.branchId },
+          deliveryOptions: {
+            branchCode: this.branchId,
+            location: { country: 'FR', zipcode: this.zipcode, city: this.city },
+          },
           stockReturnedOptions: {
             includeDCStock: true,
             includeBranchStock: true,
@@ -254,3 +262,4 @@ export class RexelAdapter extends SupplierAdapter {
     };
   }
 }
+

@@ -40,12 +40,12 @@ interface UsePriceScanReturn {
   prices: PriceMatrix;
   scanning: boolean;
   /**
-   * @param materials   Full catalogue (used to resolve references)
-   * @param rexelCredentials Optional Rexel credentials (token + branchId)
-   * @param selectedIds Only fetch prices for these material ids (order selection).
-   *                    When empty or omitted, all materials are scanned.
+   * @param materials      Full catalogue (used to resolve references)
+   * @param rexelCreds     Optional Rexel credentials (token + branchId)
+   * @param selectedIds    Only fetch prices for these material ids (order selection).
+   *                       When empty or omitted, all materials are scanned.
    */
-  startScan: (materials: Material[], rexelCredentials?: RexelCredentials, selectedIds?: Set<string>) => Promise<void>;
+  startScan: (materials: Material[], rexelCreds?: RexelCredentials, selectedIds?: Set<string>) => Promise<void>;
   stopScan: () => void;
 }
 
@@ -67,7 +67,7 @@ export function usePriceScan(): UsePriceScanReturn {
   const stopScan = useCallback(() => { abortRef.current = true; }, []);
 
   const startScan = useCallback(
-    async (materials: Material[], rexelCredentials?: RexelCredentials, selectedIds?: Set<string>) => {
+    async (materials: Material[], rexelCreds?: RexelCredentials, selectedIds?: Set<string>) => {
       if (scanning) return;
       abortRef.current = false;
       setScanning(true);
@@ -96,7 +96,7 @@ export function usePriceScan(): UsePriceScanReturn {
       });
 
       const meAdapter = new MaterielElectriqueAdapter();
-      const rexelAdapter = rexelCredentials ? new RexelAdapter(rexelCredentials) : null;
+      const rexelAdapter = rexelCreds ? new RexelAdapter(rexelCreds) : null;
 
       for (const material of targets) {
         if (abortRef.current) {
