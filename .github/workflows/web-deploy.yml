@@ -31,7 +31,7 @@ jobs:
         username: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./dist/
-        server-dir: /www/gobishare/
+        server-dir: /www/prixelec/
         exclude: | 
           **/.DS_Store
           **/Thumbs.db
