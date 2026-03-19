@@ -4,12 +4,12 @@ name: Integration Tests
 # Kept SEPARATE from unit tests — never blocks PR merges.
 # Triggered:
 #   - Manually via workflow_dispatch
-#   - Weekly on Sunday at 06:00 UTC (catches site API changes early)
+#   - Daily at 06:00 UTC (catches site changes early)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * 0'
+    - cron: '0 6 * * *'
 
 jobs:
   integration:
@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -39,4 +39,3 @@ jobs:
           path: |
             tests/integration/**/*.xml
           if-no-files-found: ignore
-
