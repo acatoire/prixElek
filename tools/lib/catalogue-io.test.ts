@@ -98,7 +98,7 @@ describe('readCatalogue', () => {
   it('returns an empty catalogue when file does not exist', async () => {
     const result = await readCatalogue('/some/path.json', {
       existsSync: () => false,
-      readFile: vi.fn(),
+      readFile: vi.fn() as any,
     });
     expect(result).toEqual([]);
   });
@@ -106,7 +106,7 @@ describe('readCatalogue', () => {
   it('parses and returns the catalogue from file', async () => {
     const result = await readCatalogue('/some/path.json', {
       existsSync: () => true,
-      readFile: vi.fn().mockResolvedValue(JSON.stringify([MATERIAL])),
+      readFile: vi.fn().mockResolvedValue(JSON.stringify([MATERIAL])) as any,
     });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe(MATERIAL.id);

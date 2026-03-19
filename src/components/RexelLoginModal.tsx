@@ -2,15 +2,17 @@
  * src/components/RexelLoginModal.tsx
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import { extractAccountId } from '@/adapters/rexel';
+import { extractAccountId, type RexelCredentials } from '@/adapters/rexel';
 interface RexelLoginModalProps {
   currentToken: string;
-  onSave: (token: string) => void;
+  currentBranchId: string;
+  onSave: (credentials: RexelCredentials) => void;
   onClear: () => void;
   onClose: () => void;
 }
-export function RexelLoginModal({ currentToken, onSave, onClear, onClose }: RexelLoginModalProps): React.ReactElement {
+export function RexelLoginModal({ currentToken, currentBranchId, onSave, onClear, onClose }: RexelLoginModalProps): React.ReactElement {
   const [draft, setDraft] = useState(currentToken);
+  const [branchDraft, setBranchDraft] = useState(currentBranchId);
   const [showToken, setShowToken] = useState(false);
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -19,14 +21,15 @@ export function RexelLoginModal({ currentToken, onSave, onClear, onClose }: Rexe
   }, [onClose]);
   const handleSave = useCallback(() => {
     const clean = draft.trim().replace(/^Bearer\s+/i, '');
-    if (!clean) return;
-    onSave(clean);
+    const cleanBranch = branchDraft.trim();
+    if (!clean || !cleanBranch) return;
+    onSave({ token: clean, branchId: cleanBranch });
     onClose();
-  }, [draft, onSave, onClose]);
-  const hasToken = currentToken.length > 0;
+  }, [draft, branchDraft, onSave, onClose]);
+  const hasToken = currentToken.length > 0 && currentBranchId.length > 0;
   const draftClean = draft.trim().replace(/^Bearer\s+/i, '');
   const draftAccountId = draftClean ? extractAccountId(draftClean) : '';
-  const draftValid = draftAccountId.length > 0;
+  const draftValid = draftAccountId.length > 0 && branchDraft.trim().length > 0;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -56,6 +59,15 @@ export function RexelLoginModal({ currentToken, onSave, onClear, onClose }: Rexe
           </div>
         </div>
         <div className="px-6 py-4 space-y-2">
+          <label className="block text-xs font-medium text-gray-700">
+            Code agence Rexel (branchId)
+          </label>
+          <input
+            value={branchDraft}
+            onChange={(e) => setBranchDraft(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="4413"
+          />
           <label className="block text-xs font-medium text-gray-700">
             Token Bearer (sans le prefixe Bearer)
           </label>
