@@ -138,7 +138,10 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
     let html: string;
 
     try {
-      const response = await axios.get<string>(productUrl, {
+      const response = await axios.get<ArrayBuffer>(productUrl, {
+        // Use arraybuffer to control UTF-8 decoding ourselves.
+        // Without this axios (Node) defaults to latin1, corrupting accented chars.
+        responseType: 'arraybuffer',
         headers: {
           'User-Agent': this.config.userAgent,
           Accept: 'text/html,application/xhtml+xml',
@@ -146,7 +149,9 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
         },
         timeout: this.config.requestTimeoutMs,
       });
-      html = response.data;
+      html = typeof response.data === 'string'
+        ? response.data
+        : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;

@@ -77,7 +77,11 @@ export function findProductInHtml(html: string): SchemaProduct | null {
  */
 export function extractCategoryFromHtml(html: string): string {
   const match = html.match(/"category"\s*:\s*"([^"]+)"/);
-  return match ? match[1].trim() : 'Appareillage';
+  if (!match) return 'Appareillage';
+  // The GTM dataLayer often escapes non-ASCII as \uXXXX — unescape them
+  return match[1].trim().replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16))
+  );
 }
 
 // ── Main extraction ───────────────────────────────────────────────────────────
@@ -90,7 +94,10 @@ export async function extractProductFromUrl(
   url: string,
   config: ScrapingConfig = DEFAULT_SCRAPING_CONFIG
 ): Promise<ExtractedProduct> {
-  const response = await axios.get<string>(url, {
+  const response = await axios.get<ArrayBuffer>(url, {
+    // Use arraybuffer so we control UTF-8 decoding — axios in Node defaults to
+    // latin1 for text, which corrupts accented characters (é → Ã©, ® → Â®).
+    responseType: 'arraybuffer',
     headers: {
       'User-Agent': config.userAgent,
       Accept: 'text/html,application/xhtml+xml',
@@ -99,7 +106,9 @@ export async function extractProductFromUrl(
     timeout: config.requestTimeoutMs,
   });
 
-  const html = response.data;
+  const html = typeof response.data === 'string'
+    ? response.data
+    : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
   return extractProductFromHtml(html, url);
 }
 
