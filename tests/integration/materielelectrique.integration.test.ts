@@ -18,7 +18,7 @@
 import { describe, it, expect } from 'vitest';
 import { MaterielElectriqueAdapter } from '../../src/adapters/materielelectrique';
 
-// Reference taken from config/catalogue.prises.legrand.json
+// Reference taken from catalogue/catalogue.prises.legrand.json
 // Légrand Céliane 4x2P+T — a stable, long-lived product
 const KNOWN_REFERENCE = 'LEG067128';
 

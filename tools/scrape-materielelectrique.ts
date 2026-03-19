@@ -26,7 +26,7 @@ const BASE = 'https://www.materielelectrique.com';
 // ── Load all catalogue files to resolve a page slug from the reference ────────
 
 function loadAllMaterials(): Material[] {
-  const configDir = join(process.cwd(), 'config');
+  const configDir = join(process.cwd(), 'catalogue');
   const files = readdirSync(configDir).filter(
     (f) => f.startsWith('catalogue.') && f.endsWith('.json')
   );

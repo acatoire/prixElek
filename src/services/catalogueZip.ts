@@ -3,51 +3,42 @@
  *
  * Zip-based import/export for the catalogue.
  *
- * Export layout inside the zip:
- *   catalogue.<slug>.json   — one file per category group
+ * Export layout inside the zip (mirrors catalogue/ at project root):
+ *   catalogue.cables.json
+ *   catalogue.prises.legrand.json
+ *   …
  *
- * The grouping mirrors the config/ file convention so the exported zip
- * can be dropped straight into config/ and committed to the repo.
+ * Each file is named after the _sourceFile stem tracked on the material,
+ * so the zip is always a faithful mirror of the catalogue/ folder.
  *
- * Uses fflate (already a project dependency) — runs entirely in the browser,
- * no server round-trip.
+ * Uses fflate — runs entirely in the browser, no server round-trip.
  */
 
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import type { Material, Catalog } from '@/types/material';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Convert a free-form category string to a file-safe slug */
-function categorySlug(categorie: string): string {
-  return categorie
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || 'divers';
-}
+type MaterialWithSource = Material & { _sourceFile?: string };
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
 /**
- * Groups materials by category slug, serialises each group to a JSON file,
- * packs them all in a zip and triggers a browser download.
+ * Groups materials by their _sourceFile stem (e.g. "catalogue.cables"),
+ * serialises each group to JSON, packs into a zip and triggers a download.
+ * Materials without a _sourceFile are placed in "catalogue.divers".
  */
-export function exportCatalogueAsZip(materials: Material[]): void {
-  // Group by category slug
+export function exportCatalogueAsZip(materials: MaterialWithSource[]): void {
   const groups = new Map<string, Material[]>();
-  for (const m of materials) {
-    const slug = categorySlug(m.categorie);
-    if (!groups.has(slug)) groups.set(slug, []);
-    groups.get(slug)!.push(m);
+
+  for (const { _sourceFile, ...m } of materials) {
+    const stem = _sourceFile ?? 'catalogue.divers';
+    if (!groups.has(stem)) groups.set(stem, []);
+    groups.get(stem)!.push(m);
   }
 
-  // Build the zip file map  { filename: Uint8Array }
   const files: Record<string, Uint8Array> = {};
-  for (const [slug, items] of groups) {
-    const filename = `catalogue.${slug}.json`;
+  for (const [stem, items] of groups) {
+    // Ensure the filename always ends in .json
+    const filename = stem.endsWith('.json') ? stem : `${stem}.json`;
     files[filename] = strToU8(JSON.stringify(items, null, 2) + '\n');
   }
 
@@ -64,14 +55,12 @@ export function exportCatalogueAsZip(materials: Material[]): void {
 // ── Import ────────────────────────────────────────────────────────────────────
 
 /**
- * Reads a zip file (as ArrayBuffer), extracts every catalogue.*.json entry,
- * merges all items and returns the flat list.
- * Throws a descriptive Error if the zip contains no catalogue files.
+ * Reads a zip (ArrayBuffer), extracts every catalogue.*.json,
+ * merges and deduplicates, returns flat list.
  */
 export function importCatalogueFromZip(buffer: ArrayBuffer): Catalog {
   const unzipped = unzipSync(new Uint8Array(buffer));
 
-  const all: Material[] = [];
   const catalogueFiles = Object.keys(unzipped).filter(
     (name) => /^catalogue\..+\.json$/i.test(name)
   );
@@ -83,6 +72,7 @@ export function importCatalogueFromZip(buffer: ArrayBuffer): Catalog {
     );
   }
 
+  const all: Material[] = [];
   for (const filename of catalogueFiles.sort()) {
     const text = strFromU8(unzipped[filename]);
     let parsed: unknown;
@@ -97,7 +87,6 @@ export function importCatalogueFromZip(buffer: ArrayBuffer): Catalog {
     all.push(...(parsed as Material[]));
   }
 
-  // Deduplicate by id (first occurrence wins)
   const seen = new Set<string>();
   return all.filter((m) => {
     if (seen.has(m.id)) return false;
@@ -108,14 +97,12 @@ export function importCatalogueFromZip(buffer: ArrayBuffer): Catalog {
 
 /**
  * Reads a plain JSON file (ArrayBuffer) and returns the flat catalogue list.
- * Accepts both a root array and the legacy single-file format.
  */
 export function importCatalogueFromJson(buffer: ArrayBuffer): Catalog {
   const text = new TextDecoder().decode(buffer);
   const parsed = JSON.parse(text) as unknown;
   if (!Array.isArray(parsed)) {
-    throw new Error('Le fichier JSON doit contenir un tableau d\'articles.');
+    throw new Error("Le fichier JSON doit contenir un tableau d'articles.");
   }
   return parsed as Catalog;
 }
-

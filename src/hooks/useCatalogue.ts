@@ -9,7 +9,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Material, Catalog } from '@/types/material';
-import { loadAllMaterials } from '@/services/CatalogService';
+import { loadAllMaterialsWithSource } from '@/services/CatalogService';
 import { exportCatalogueAsZip } from '@/services/catalogueZip';
 
 function slugify(text: string): string {
@@ -20,6 +20,9 @@ function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
+/** Internal type — materials carry their source filename while in state */
+type MaterialWithSource = Material & { _sourceFile: string };
 
 export interface UseCatalogueReturn {
   materials: Material[];
@@ -36,33 +39,45 @@ export interface UseCatalogueReturn {
 }
 
 export function useCatalogue(): UseCatalogueReturn {
-  const [materials, setMaterials] = useState<Catalog>(() => loadAllMaterials());
+  const [materialsWithSource, setMaterialsWithSource] = useState<MaterialWithSource[]>(
+    () => loadAllMaterialsWithSource()
+  );
+
+  // Expose plain materials (without _sourceFile) to consumers
+  const materials: Material[] = materialsWithSource.map(({ _sourceFile: _f, ...m }) => m);
 
   const importCatalogue = useCallback((items: Material[]) => {
-    setMaterials(items);
+    // Imported items have no known source file — assign a default stem
+    setMaterialsWithSource(
+      items.map((m) => ({ ...m, _sourceFile: 'catalogue.import' }))
+    );
   }, []);
 
   const addMaterial = useCallback((item: Material): boolean => {
     let added = false;
-    setMaterials((prev) => {
+    setMaterialsWithSource((prev) => {
       if (prev.some((m) => m.id === item.id)) return prev;
       added = true;
-      return [...prev, item];
+      // Newly added items: derive a source file from a slugified name stem
+      const stem = `catalogue.${slugify(item.categorie || item.nom).slice(0, 40) || 'divers'}`;
+      return [...prev, { ...item, _sourceFile: stem }];
     });
     return added;
   }, []);
 
   const updateMaterial = useCallback((item: Material) => {
-    setMaterials((prev) => prev.map((m) => (m.id === item.id ? item : m)));
+    setMaterialsWithSource((prev) =>
+      prev.map((m) => (m.id === item.id ? { ...item, _sourceFile: m._sourceFile } : m))
+    );
   }, []);
 
   const removeMaterial = useCallback((id: string) => {
-    setMaterials((prev) => prev.filter((m) => m.id !== id));
+    setMaterialsWithSource((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
   const exportCatalogue = useCallback(() => {
-    exportCatalogueAsZip(materials);
-  }, [materials]);
+    exportCatalogueAsZip(materialsWithSource);
+  }, [materialsWithSource]);
 
   return { materials, importCatalogue, addMaterial, updateMaterial, removeMaterial, exportCatalogue };
 }
@@ -89,6 +104,3 @@ export function buildMaterialFromExtracted(opts: {
     },
   };
 }
-
-
-

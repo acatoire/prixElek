@@ -23,22 +23,22 @@ describe('loadAllMaterials', () => {
   });
 
   it('loads materials from a single catalogue (default-wrapped)', () => {
-    const modules = { '/config/catalogue.a.json': { default: catalogA } };
+    const modules = { '/catalogue/catalogue.a.json': { default: catalogA } };
     const result = loadAllMaterials(modules);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('item-a');
   });
 
   it('loads materials from a single catalogue (no default wrapper)', () => {
-    const modules = { '/config/catalogue.a.json': catalogA };
+    const modules = { '/catalogue/catalogue.a.json': catalogA };
     const result = loadAllMaterials(modules);
     expect(result[0].id).toBe('item-a');
   });
 
   it('merges materials from multiple catalogues in sorted file order', () => {
     const modules = {
-      '/config/catalogue.b.json': { default: catalogB },
-      '/config/catalogue.a.json': { default: catalogA },
+      '/catalogue/catalogue.b.json': { default: catalogB },
+      '/catalogue/catalogue.a.json': { default: catalogA },
     };
     const result = loadAllMaterials(modules);
     expect(result).toHaveLength(2);
@@ -49,8 +49,8 @@ describe('loadAllMaterials', () => {
 
   it('deduplicates materials with the same id across catalogues', () => {
     const modules = {
-      '/config/catalogue.a.json': { default: catalogA },
-      '/config/catalogue.dupe.json': { default: catalogA },
+      '/catalogue/catalogue.a.json': { default: catalogA },
+      '/catalogue/catalogue.dupe.json': { default: catalogA },
     };
     expect(loadAllMaterials(modules)).toHaveLength(1);
   });

@@ -2,7 +2,7 @@
  * src/types/material.ts
  *
  * TypeScript types for the material catalog.
- * Mirrors the structure of config/catalogue.json.
+ * Mirrors the structure of catalogue/catalogue.*.json.
  */
 
 /** Key = supplierId (e.g. 'rexel'), value = supplier reference or null if unlisted */

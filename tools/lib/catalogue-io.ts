@@ -13,7 +13,7 @@ import { join } from 'path';
 import type { Material, Catalog } from '../../src/types/material';
 import type { ExtractedProduct } from './extract-product-from-page';
 
-const CONFIG_DIR = join(process.cwd(), 'config');
+const CONFIG_DIR = join(process.cwd(), 'catalogue');
 
 /** Returns the absolute path for a catalogue file name (with or without .json) */
 export function cataloguePath(name: string): string {

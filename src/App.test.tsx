@@ -7,17 +7,19 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { App } from './App';
 
 // Mock heavy dependencies so App renders without real data/network
-vi.mock('@/services/CatalogService', () => ({
-  loadAllMaterials: () => [
-    {
-      id: 'mat-1',
-      nom: 'Prise Test',
-      marque: 'Legrand',
-      categorie: 'Prise de courant',
-      references_fournisseurs: { materielelectrique: 'REF-001' },
-    },
-  ],
-}));
+vi.mock('@/services/CatalogService', () => {
+  const material = {
+    id: 'mat-1',
+    nom: 'Prise Test',
+    marque: 'Legrand',
+    categorie: 'Prise de courant',
+    references_fournisseurs: { materielelectrique: 'REF-001' },
+  };
+  return {
+    loadAllMaterials: () => [material],
+    loadAllMaterialsWithSource: () => [{ ...material, _sourceFile: 'catalogue.prises.legrand' }],
+  };
+});
 
 vi.mock('@/services/catalogueZip', () => ({
   exportCatalogueAsZip: vi.fn(),

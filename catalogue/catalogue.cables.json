@@ -1,9 +1,9 @@
 [
   {
     "id": "fil-electrique-rigide-nexans-easyfil-r-3-ho7v-u-2-5mm2-couronne-de-100m-p-686448",
-    "nom": "Fil électrique rigide Nexans EASYFIL® 3 HO7V-U 2,5mm² couronne de 100m",
+    "nom": "Fil Ã©lectrique rigide Nexans EASYFILÂ® 3 HO7V-U 2,5mmÂ² couronne de 100m",
     "marque": "Nexans",
-    "categorie": "Fil \\u00e9lectrique rigide HO7VU (1,5 \\u00e0 2,5 mm\\u00b2)",
+    "categorie": "Fil électrique",
     "references_fournisseurs": {
       "materielelectrique": "NEX01272241N",
       "rexel": null,
@@ -13,9 +13,9 @@
   },
   {
     "id": "fil-electrique-rigide-nexans-easyfil-r-3-ho7v-u-1-5mm2-1-p-651937",
-    "nom": "Fil électrique rigide Nexans EASYFIL® 3 HO7V-U 1,5mm²",
+    "nom": "Fil Ã©lectrique rigide Nexans EASYFILÂ® 3 HO7V-U 1,5mmÂ²",
     "marque": "Nexans",
-    "categorie": "Fil \\u00e9lectrique rigide HO7VU (1,5 \\u00e0 2,5 mm\\u00b2)",
+    "categorie": "Fil électrique",
     "references_fournisseurs": {
       "materielelectrique": "NEX01272240N",
       "rexel": null,

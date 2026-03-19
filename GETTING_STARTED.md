@@ -2,7 +2,8 @@
 
 ## 🎯 Quick Reference for Developers
 
-Welcome to the prixElek project! This guide will help you set up your development environment and understand the project structure.
+Welcome to the prixElek project! This guide will help you set up your development environment and understand the project
+structure.
 
 ---
 
@@ -159,14 +160,18 @@ Each supplier has an adapter that handles authentication and price fetching:
 ```typescript
 // Example: src/adapters/base.ts
 export abstract class FournisseurAdapter {
-  abstract authenticate(login: string, password: string): Promise<{success: boolean, token: string}>;
-  abstract getPrice(reference: string, token: string): Promise<{prix_ht: number, stock?: number, unite: string}>;
+    abstract authenticate(login: string, password: string): Promise<{ success: boolean, token: string }>;
+
+    abstract getPrice(reference: string, token: string): Promise<{ prix_ht: number, stock?: number, unite: string }>;
 }
 
 // Implementation: src/adapters/rexel.ts
 export class RexelAdapter extends FournisseurAdapter {
-  async authenticate(login, password) { /* implementation */ }
-  async getPrice(reference, token) { /* implementation */ }
+    async authenticate(login, password) { /* implementation */
+    }
+
+    async getPrice(reference, token) { /* implementation */
+    }
 }
 ```
 
@@ -177,11 +182,11 @@ Services orchestrate adapters and manage data:
 ```typescript
 // src/services/PriceService.ts
 export class PriceService {
-  async fetchAllPrices(materials: Material[]): Promise<PriceMatrix> {
-    // Calls all adapter.getPrice() methods
-    // Handles errors gracefully
-    // Returns organized price data
-  }
+    async fetchAllPrices(materials: Material[]): Promise<PriceMatrix> {
+        // Calls all adapter.getPrice() methods
+        // Handles errors gracefully
+        // Returns organized price data
+    }
 }
 ```
 
@@ -191,8 +196,8 @@ React/Vue components display data and handle user interactions:
 
 ```typescript
 // src/components/PriceTable.tsx
-export const PriceTable: React.FC<PriceTableProps> = ({ materials, loading }) => {
-  // Render price comparison table
+export const PriceTable: React.FC<PriceTableProps> = ({materials, loading}) => {
+    // Render price comparison table
 };
 ```
 
@@ -258,6 +263,13 @@ Get-ChildItem dist/
 # Preview production build locally
 npm run preview
 ```
+
+### Deploy on production
+
+To deploy you need to have push `dist/` to your branch and got it merged on the main branch.
+Create a new release on GitHub.
+└── The release will trigger the rebase-prod workflow that will merge the main branch into the production branch
+    └──This will trigger the web-deploy workflow that will deploy it to production using ftp.
 
 ---
 
@@ -482,13 +494,13 @@ npm run build -- --force
 
 ## Resources
 
-| Resource | Link |
-|----------|------|
-| Project Spec | [doc/cdc.md](doc/cdc.md) |
-| Module 1 | [doc/cdc-m1.md](doc/cdc-m1.md) |
-| API Guide | [doc/scraping.md](doc/scraping.md) |
-| Copilot Instructions | [.copilot-instructions](.copilot-instructions) |
-| Contributing | [README.md#contributing](README.md#contributing) |
+| Resource             | Link                                             |
+|----------------------|--------------------------------------------------|
+| Project Spec         | [doc/cdc.md](doc/cdc.md)                         |
+| Module 1             | [doc/cdc-m1.md](doc/cdc-m1.md)                   |
+| API Guide            | [doc/scraping.md](doc/scraping.md)               |
+| Copilot Instructions | [.copilot-instructions](.copilot-instructions)   |
+| Contributing         | [README.md#contributing](README.md#contributing) |
 
 ---
 

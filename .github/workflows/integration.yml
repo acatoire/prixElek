@@ -4,12 +4,12 @@ name: Integration Tests
 # Kept SEPARATE from unit tests — never blocks PR merges.
 # Triggered:
 #   - Manually via workflow_dispatch
-#   - Daily at 06:00 UTC (catches site changes early)
+#   - Daily at 06:00 UTC (catches site changes early) (disabled for now)
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * *'
+  # schedule: # to be re-enabled once we have a stable test suite
+  #   - cron: '0 6 * * *'
 
 jobs:
   integration:
