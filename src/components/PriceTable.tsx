@@ -21,6 +21,8 @@ interface PriceTableProps {
   scanning: boolean;
   onScan: () => void;
   onStop: () => void;
+  onEdit: (material: Material) => void;
+  toolbar?: React.ReactNode;
 }
 
 export function PriceTable({
@@ -29,6 +31,8 @@ export function PriceTable({
   scanning,
   onScan,
   onStop,
+  onEdit,
+  toolbar,
 }: PriceTableProps): React.ReactElement {
   const lastUpdated = Object.values(prices)
     .flatMap((row) => Object.values(row))
@@ -40,7 +44,7 @@ export function PriceTable({
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-wrap gap-3">
         <div>
           <h2 className="text-sm font-semibold text-gray-900">
             Catalogue — {materials.length} article{materials.length > 1 ? 's' : ''}
@@ -56,7 +60,11 @@ export function PriceTable({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Catalogue management buttons (import/export/add) */}
+          {toolbar}
+
+          {/* Scan buttons */}
           {scanning && (
             <button
               onClick={onStop}
@@ -85,10 +93,7 @@ export function PriceTable({
                 Scan en cours…
               </>
             ) : (
-              <>
-                <span>🔍</span>
-                Actualiser les prix
-              </>
+              <><span>🔍</span> Actualiser les prix</>
             )}
           </button>
         </div>
@@ -122,6 +127,8 @@ export function PriceTable({
                     {s.label}
                   </th>
                 ))}
+                {/* Edit column */}
+                <th className="px-3 py-3 w-10" />
               </tr>
             </thead>
             <tbody>
@@ -129,7 +136,7 @@ export function PriceTable({
                 <tr
                   key={material.id}
                   className={[
-                    'border-b border-gray-50 transition-colors',
+                    'border-b border-gray-50 transition-colors group',
                     idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
                     'hover:bg-orange-50/30',
                   ].join(' ')}
@@ -146,6 +153,17 @@ export function PriceTable({
                       <PriceCellDisplay cell={prices[material.id]?.[s.id]} />
                     </td>
                   ))}
+                  {/* Edit button */}
+                  <td className="px-3 py-3.5 text-right">
+                    <button
+                      onClick={() => onEdit(material)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-orange-500 transition-opacity focus:opacity-100 p-1 rounded"
+                      title="Modifier cet article"
+                      aria-label={`Modifier ${material.nom}`}
+                    >
+                      ✏️
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -34,7 +34,7 @@ describe('PriceTable', () => {
   it('renders material name, brand and category', () => {
     render(
 
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     expect(screen.getByText('Prise Céliane 4x2P+T')).toBeInTheDocument();
     expect(screen.getByText('Legrand')).toBeInTheDocument();
@@ -43,14 +43,14 @@ describe('PriceTable', () => {
 
   it('shows the scan button when not scanning', () => {
     render(
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     expect(screen.getByText(/Actualiser les prix/)).toBeInTheDocument();
   });
 
   it('shows scanning state and disables button during scan', () => {
     render(
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={true} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={true} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     // During scan there are two buttons: "Arrêter" (enabled) and "Scan en cours…" (disabled)
     const scanBtn = screen.getByText(/Scan en cours/).closest('button') as HTMLButtonElement;
@@ -61,24 +61,33 @@ describe('PriceTable', () => {
   it('calls onScan when button is clicked', () => {
     const onScan = vi.fn();
     render(
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={onScan} onStop={vi.fn()} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={onScan} onStop={vi.fn()} onEdit={vi.fn()} />
     );
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/Actualiser les prix/).closest('button')!);
     expect(onScan).toHaveBeenCalledOnce();
   });
 
   it('calls onStop when stop button is clicked during scan', () => {
     const onStop = vi.fn();
     render(
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={true} onScan={vi.fn()} onStop={onStop} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={true} onScan={vi.fn()} onStop={onStop} onEdit={vi.fn()} />
     );
     fireEvent.click(screen.getByText(/Arrêter/).closest('button')!);
     expect(onStop).toHaveBeenCalledOnce();
   });
 
+  it('calls onEdit when edit button is clicked', () => {
+    const onEdit = vi.fn();
+    render(
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={onEdit} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Modifier Prise/ }));
+    expect(onEdit).toHaveBeenCalledWith(MATERIALS[0]);
+  });
+
   it('shows article count in header', () => {
     render(
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     expect(screen.getByText(/1 article/)).toBeInTheDocument();
   });
@@ -89,28 +98,28 @@ describe('PriceTable', () => {
       { ...MATERIALS[0], id: 'mat-2', nom: 'Item 2' },
     ];
     render(
-      <PriceTable materials={twoMaterials} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={twoMaterials} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     expect(screen.getByText(/2 articles/)).toBeInTheDocument();
   });
 
   it('shows empty state when no materials', () => {
     render(
-      <PriceTable materials={[]} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={[]} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     expect(screen.getByText(/Aucun article/)).toBeInTheDocument();
   });
 
   it('shows last updated timestamp when prices are loaded', () => {
     render(
-      <PriceTable materials={MATERIALS} prices={SUCCESS_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={MATERIALS} prices={SUCCESS_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     expect(screen.getByText(/Prix mis à jour/)).toBeInTheDocument();
   });
 
   it('does not show timestamp when no prices fetched yet', () => {
     render(
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} />
     );
     expect(screen.queryByText(/Prix mis à jour/)).not.toBeInTheDocument();
   });

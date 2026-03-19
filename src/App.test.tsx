@@ -19,6 +19,12 @@ vi.mock('@/services/CatalogService', () => ({
   ],
 }));
 
+vi.mock('@/services/catalogueZip', () => ({
+  exportCatalogueAsZip: vi.fn(),
+  importCatalogueFromZip: vi.fn(() => []),
+  importCatalogueFromJson: vi.fn(() => []),
+}));
+
 vi.mock('@/adapters/materielelectrique', () => ({
   MaterielElectriqueAdapter: vi.fn().mockImplementation(() => ({
     getPrice: vi.fn(),
@@ -45,8 +51,8 @@ describe('App', () => {
   it('clicking the scan button triggers a scan', async () => {
     render(<App />);
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByText(/Actualiser les prix/).closest('button')!);
     });
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(screen.getByText(/Actualiser les prix|Scan en cours/)).toBeInTheDocument();
   });
 });

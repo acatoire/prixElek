@@ -1,17 +1,43 @@
 /**
  * src/App.tsx
- *
- * Root application component — Phase 1: catalogue + price scan.
  */
-import React, { useMemo, useCallback } from 'react';
-import { loadAllMaterials } from '@/services/CatalogService';
+import React, { useCallback, useState } from 'react';
 import { usePriceScan } from '@/hooks/usePriceScan';
+import { useCatalogue } from '@/hooks/useCatalogue';
 import { PriceTable } from '@/components/PriceTable';
+import { CatalogueToolbar } from '@/components/CatalogueToolbar';
+import { EditMaterialModal } from '@/components/EditMaterialModal';
+import { AddFromUrlModal } from '@/components/AddFromUrlModal';
+import type { Material, Catalog } from '@/types/material';
 
 export function App(): React.ReactElement {
-  const materials = useMemo(() => loadAllMaterials(), []);
+  const {
+    materials,
+    importCatalogue,
+    addMaterial,
+    updateMaterial,
+    removeMaterial,
+    exportCatalogue,
+  } = useCatalogue();
+
   const { prices, scanning, startScan, stopScan } = usePriceScan();
   const handleScan = useCallback(() => startScan(materials), [startScan, materials]);
+
+  // Edit modal
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const handleEdit = useCallback((m: Material) => setEditingMaterial(m), []);
+  const handleEditClose = useCallback(() => setEditingMaterial(null), []);
+
+  // Add-from-URL modal
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const toolbar = (
+    <CatalogueToolbar
+      onImport={(items: Catalog) => importCatalogue(items)}
+      onExport={exportCatalogue}
+      onAddFromUrl={() => setShowAddModal(true)}
+    />
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -34,8 +60,28 @@ export function App(): React.ReactElement {
           scanning={scanning}
           onScan={handleScan}
           onStop={stopScan}
+          onEdit={handleEdit}
+          toolbar={toolbar}
         />
       </main>
+
+      {/* ── Edit modal ── */}
+      {editingMaterial && (
+        <EditMaterialModal
+          material={editingMaterial}
+          onSave={updateMaterial}
+          onDelete={removeMaterial}
+          onClose={handleEditClose}
+        />
+      )}
+
+      {/* ── Add from URL modal ── */}
+      {showAddModal && (
+        <AddFromUrlModal
+          onAdd={addMaterial}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
     </div>
   );
 }
