@@ -5,11 +5,13 @@ import React, { useCallback, useState } from 'react';
 import { usePriceScan } from '@/hooks/usePriceScan';
 import { useCatalogue } from '@/hooks/useCatalogue';
 import { useCommande } from '@/hooks/useCommande';
+import { useRexelAuth } from '@/hooks/useRexelAuth';
 import { PriceTable } from '@/components/PriceTable';
 import { CatalogueToolbar } from '@/components/CatalogueToolbar';
 import { CommandeTab } from '@/components/CommandeTab';
 import { EditMaterialModal } from '@/components/EditMaterialModal';
 import { AddFromUrlModal } from '@/components/AddFromUrlModal';
+import { RexelLoginModal } from '@/components/RexelLoginModal';
 import type { Material, Catalog } from '@/types/material';
 
 type Tab = 'catalogue' | 'commande';
@@ -23,24 +25,28 @@ export function App(): React.ReactElement {
     removeMaterial,
     exportCatalogue,
   } = useCatalogue();
-
   const { prices, scanning, startScan, stopScan } = usePriceScan();
-  const handleScan = useCallback(() => startScan(materials), [startScan, materials]);
-
+  const rexelAuth = useRexelAuth();
   const commande = useCommande();
   const { selectedIds, toggleSelected, setAllSelected } = commande;
 
   // Tabs
   const [activeTab, setActiveTab] = useState<Tab>('catalogue');
-  const commandeCount = selectedIds.size;
+
+  // Pass rexel token and selected ids to scan — only fetch prices for order items
+  const handleScan = useCallback(
+    () => startScan(materials, rexelAuth.token, selectedIds.size > 0 ? selectedIds : undefined),
+    [startScan, materials, rexelAuth.token, selectedIds]
+  );
 
   // Edit modal
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
-  const handleEdit = useCallback((m: Material) => setEditingMaterial(m), []);
-  const handleEditClose = useCallback(() => setEditingMaterial(null), []);
 
   // Add-from-URL modal
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Rexel login modal
+  const [showRexelModal, setShowRexelModal] = useState(false);
 
   const toolbar = (
     <CatalogueToolbar
@@ -54,11 +60,29 @@ export function App(): React.ReactElement {
     <div className="min-h-screen bg-gray-50">
       {/* ── Header ── */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <span className="text-2xl">⚡</span>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">prixElek</h1>
-            <p className="text-sm text-gray-500">Comparateur de prix fournisseurs</p>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚡</span>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">prixElek</h1>
+              <p className="text-sm text-gray-500">Comparateur de prix fournisseurs</p>
+            </div>
+          </div>
+
+          {/* Supplier connection status */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowRexelModal(true)}
+              className={[
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                rexelAuth.isConnected
+                  ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                  : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100',
+              ].join(' ')}
+            >
+              {rexelAuth.isConnected ? '🟢' : '🔴'}
+              Rexel
+            </button>
           </div>
         </div>
       </header>
@@ -88,9 +112,9 @@ export function App(): React.ReactElement {
               ].join(' ')}
             >
               🛒 Commande
-              {commandeCount > 0 && (
+              {selectedIds.size > 0 && (
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold bg-orange-500 text-white">
-                  {commandeCount}
+                  {selectedIds.size}
                 </span>
               )}
             </button>
@@ -107,7 +131,7 @@ export function App(): React.ReactElement {
             scanning={scanning}
             onScan={handleScan}
             onStop={stopScan}
-            onEdit={handleEdit}
+            onEdit={(m) => setEditingMaterial(m)}
             toolbar={toolbar}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelected}
@@ -115,29 +139,28 @@ export function App(): React.ReactElement {
           />
         )}
         {activeTab === 'commande' && (
-          <CommandeTab
-            materials={materials}
-            prices={prices}
-            commande={commande}
-          />
+          <CommandeTab materials={materials} prices={prices} commande={commande} />
         )}
       </main>
 
-      {/* ── Edit modal ── */}
+      {/* ── Modals ── */}
       {editingMaterial && (
         <EditMaterialModal
           material={editingMaterial}
           onSave={updateMaterial}
           onDelete={removeMaterial}
-          onClose={handleEditClose}
+          onClose={() => setEditingMaterial(null)}
         />
       )}
-
-      {/* ── Add from URL modal ── */}
       {showAddModal && (
-        <AddFromUrlModal
-          onAdd={addMaterial}
-          onClose={() => setShowAddModal(false)}
+        <AddFromUrlModal onAdd={addMaterial} onClose={() => setShowAddModal(false)} />
+      )}
+      {showRexelModal && (
+        <RexelLoginModal
+          currentToken={rexelAuth.token}
+          onSave={rexelAuth.saveToken}
+          onClear={rexelAuth.clearToken}
+          onClose={() => setShowRexelModal(false)}
         />
       )}
     </div>

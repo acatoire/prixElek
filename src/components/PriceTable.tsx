@@ -9,11 +9,7 @@ import React from 'react';
 import type { Material } from '@/types/material';
 import type { PriceMatrix } from '@/types/price';
 import { PriceCellDisplay } from './PriceCellDisplay';
-
-const SUPPLIERS = [
-  { id: 'materielelectrique', label: 'Matériel Électrique', color: '#e65c00' },
-  // Future suppliers added here
-];
+import { SUPPLIERS } from '@/config/suppliers';
 
 interface PriceTableProps {
   materials: Material[];
@@ -110,6 +106,8 @@ export function PriceTable({
                 <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
                 Scan en cours…
               </>
+            ) : selectedCount > 0 ? (
+              <><span>🔍</span> Actualiser les prix ({selectedCount})</>
             ) : (
               <><span>🔍</span> Actualiser les prix</>
             )}

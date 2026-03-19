@@ -12,13 +12,7 @@ import React, { useRef, useCallback } from 'react';
 import type { Material } from '@/types/material';
 import type { PriceMatrix } from '@/types/price';
 import type { UseCommandeReturn } from '@/hooks/useCommande';
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const SUPPLIERS = [
-  { id: 'materielelectrique', label: 'Matériel Électrique', color: '#e65c00' },
-  // Future suppliers added here
-];
+import { SUPPLIERS } from '@/config/suppliers';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
