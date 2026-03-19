@@ -9,12 +9,27 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
-import { RexelAdapter } from './rexel';
+import { RexelAdapter, decodeRexelToken, extractAccountId, extractWebshopId, extractApiKey } from './rexel';
 import { FetchError } from '@/types/error';
 
 const SKU = '70569480';
 const API_URL = 'https://eu.dif.rexel.com/web/api/v3/product/priceandavailability';
-const TOKEN = 'test-bearer-token';
+
+// Build a minimal valid JWT with an accountNumber, webshopId and api_key embedded
+function makeJwt(accountNumber: string, webshopId = 'FRW', apiKey = 'test-api-key'): string {
+  const payload = Buffer.from(
+    JSON.stringify({
+      ERPCustomerID: { accountNumber },
+      WebshopID: { webshopId },
+      api_key: apiKey,
+      exp: 9999999999,
+    })
+  ).toString('base64url');
+  return `header.${payload}.signature`;
+}
+
+const ACCOUNT_ID = '6440598';
+const TOKEN = makeJwt(ACCOUNT_ID);
 
 function makeResponse(overrides?: {
   sku?: string;
@@ -57,6 +72,56 @@ describe('RexelAdapter', () => {
   let adapter: RexelAdapter;
   beforeAll(() => { adapter = new RexelAdapter(TOKEN); });
 
+  // ── JWT helpers ─────────────────────────────────────────────────────────────
+
+  describe('decodeRexelToken', () => {
+    it('extracts accountNumber from a valid JWT', () => {
+      const decoded = decodeRexelToken(TOKEN);
+      expect(decoded.ERPCustomerID?.accountNumber).toBe(ACCOUNT_ID);
+    });
+
+    it('returns empty object for a garbage token', () => {
+      expect(decodeRexelToken('not.a.jwt')).toEqual({});
+    });
+
+    it('returns empty object for an empty string', () => {
+      expect(decodeRexelToken('')).toEqual({});
+    });
+  });
+
+  describe('extractAccountId', () => {
+    it('returns the accountNumber from a valid JWT', () => {
+      expect(extractAccountId(TOKEN)).toBe(ACCOUNT_ID);
+    });
+
+    it('returns empty string when token has no ERPCustomerID', () => {
+      const bare = `header.${Buffer.from('{}').toString('base64url')}.sig`;
+      expect(extractAccountId(bare)).toBe('');
+    });
+  });
+
+  describe('extractWebshopId', () => {
+    it('returns the webshopId from a valid JWT', () => {
+      expect(extractWebshopId(TOKEN)).toBe('FRW');
+    });
+
+    it('returns empty string when token has no WebshopID', () => {
+      const bare = `header.${Buffer.from('{}').toString('base64url')}.sig`;
+      expect(extractWebshopId(bare)).toBe('');
+    });
+  });
+
+  describe('extractApiKey', () => {
+    it('returns the api_key from a valid JWT', () => {
+      expect(extractApiKey(TOKEN)).toBe('test-api-key');
+    });
+
+    it('returns empty string when token has no api_key', () => {
+      const bare = `header.${Buffer.from('{}').toString('base64url')}.sig`;
+      expect(extractApiKey(bare)).toBe('');
+    });
+  });
+
   it('has correct supplierId', () => {
     expect(adapter.supplierId).toBe('rexel');
   });
@@ -64,6 +129,12 @@ describe('RexelAdapter', () => {
   it('throws AUTH_ERROR when no token provided', async () => {
     const empty = new RexelAdapter('');
     await expect(empty.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR' });
+  });
+
+  it('throws AUTH_ERROR when token has no accountId', async () => {
+    const noAccount = `header.${Buffer.from('{"exp":9999}').toString('base64url')}.sig`;
+    const a = new RexelAdapter(noAccount);
+    await expect(a.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR' });
   });
 
   describe('getPrice — happy path', () => {

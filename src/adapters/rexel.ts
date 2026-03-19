@@ -1,14 +1,5 @@
 /**
  * src/adapters/rexel.ts
- *
- * Rexel adapter — calls the internal SAP Commerce Cloud price API:
- *   POST https://eu.dif.rexel.com/web/api/v3/product/priceandavailability
- *
- * Requires a Bearer token obtained after the user logs in to rexel.fr.
- * The token is stored in localStorage by useRexelAuth and injected here.
- *
- * Pricing: we use UNIT_LIST_PRICE (net unit price after discount).
- * Stock:   DELIVERY_BRANCH_AVAILABILITY with quantity.available > 0 → 1, else 0.
  */
 
 import axios from 'axios';
@@ -18,6 +9,58 @@ import type { SupplierPrice } from '@/types/price';
 
 const API_URL = 'https://eu.dif.rexel.com/web/api/v3/product/priceandavailability';
 const BANNER = 'frx';
+
+// ── JWT helpers ───────────────────────────────────────────────────────────────
+
+interface RexelJwtPayload {
+  ERPCustomerID?: { accountNumber?: string };
+  api_key?: string;
+  WebshopID?: { webshopId?: string };
+  exp?: number;
+}
+
+/** Decode the middle (payload) segment of a JWT without verifying the signature. */
+export function decodeRexelToken(jwt: string): RexelJwtPayload {
+  try {
+    const seg = jwt.split('.')[1] ?? '';
+    const pad = (4 - (seg.length % 4)) % 4;
+    const b64 = (seg + '='.repeat(pad)).replace(/-/g, '+').replace(/_/g, '/');
+    // Works in both browser (atob) and Node (Buffer)
+    const json = typeof Buffer !== 'undefined'
+      ? Buffer.from(b64, 'base64').toString('utf-8')
+      : atob(b64);
+    return JSON.parse(json) as RexelJwtPayload;
+  } catch {
+    return {};
+  }
+}
+
+/** Extract the account number required by the price API. */
+export function extractAccountId(jwt: string): string {
+  return decodeRexelToken(jwt).ERPCustomerID?.accountNumber ?? '';
+}
+
+/** Extract the webshop ID from the JWT (e.g. "FRW"). */
+export function extractWebshopId(jwt: string): string {
+  return decodeRexelToken(jwt).WebshopID?.webshopId ?? '';
+}
+
+/** Extract the api_key from the JWT. */
+export function extractApiKey(jwt: string): string {
+  return decodeRexelToken(jwt).api_key ?? '';
+}
+
+// ── Credentials ───────────────────────────────────────────────────────────────
+
+/**
+ * Everything needed to call the price API.
+ * branchId is the user's local Rexel agency code (e.g. "4413").
+ * It is NOT in the JWT — the user must supply it (shown in the login modal).
+ */
+export interface RexelCredentials {
+  token: string;
+  branchId: string;
+}
 
 // ── Response shape (minimal) ──────────────────────────────────────────────────
 
@@ -46,10 +89,14 @@ interface RexelResponse {
 export class RexelAdapter extends SupplierAdapter {
   readonly supplierId = 'rexel';
   private readonly token: string;
+  private readonly accountId: string;
+  private readonly branchId: string;
 
-  constructor(token: string) {
+  constructor(credentials: RexelCredentials) {
     super();
-    this.token = token;
+    this.token = credentials.token;
+    this.accountId = extractAccountId(credentials.token);
+    this.branchId = credentials.branchId;
   }
 
   async getPrice(reference: string): Promise<SupplierPrice> {
@@ -61,21 +108,48 @@ export class RexelAdapter extends SupplierAdapter {
         retryable: false,
       });
     }
+    if (!this.accountId) {
+      throw new FetchError({
+        code: 'AUTH_ERROR',
+        supplierId: this.supplierId,
+        message: 'Token Rexel invalide : accountId introuvable dans le JWT.',
+        retryable: false,
+      });
+    }
+    if (!this.branchId) {
+      throw new FetchError({
+        code: 'AUTH_ERROR',
+        supplierId: this.supplierId,
+        message: 'Code agence Rexel manquant — veuillez le renseigner dans la connexion.',
+        retryable: false,
+      });
+    }
 
     let data: RexelResponse;
     try {
       const response = await axios.post<RexelResponse>(
         API_URL,
         {
-          banner: BANNER,
-          lines: [{ sku: reference, qty: 1 }],
+          accountId: this.accountId,
+          branchId: this.branchId,
+          pickupOptions: { branchCode: this.branchId },
+          deliveryOptions: { branchCode: this.branchId },
+          stockReturnedOptions: {
+            includeDCStock: true,
+            includeBranchStock: true,
+            includeDelay: true,
+          },
+          includeLeasePrice: true,
+          // quantity MUST be an object {number: N} — primitive triggers "Failed to read request"
+          lines: [{ sku: reference, quantity: { number: 1 } }],
         },
         {
           headers: {
             Authorization: `Bearer ${this.token}`,
             'Content-Type': 'application/json',
+            'Content-Language': 'fr',
             Accept: 'application/json, text/plain, */*',
-            'Accept-Language': 'fr',
+            'Accept-Language': 'fr,fr-FR;q=0.9,en-US;q=0.8,en;q=0.7',
             'x-banner': BANNER,
             Origin: 'https://www.rexel.fr',
             Referer: 'https://www.rexel.fr/',
@@ -93,6 +167,16 @@ export class RexelAdapter extends SupplierAdapter {
             supplierId: this.supplierId,
             message: 'Token Rexel expiré ou invalide — veuillez vous reconnecter.',
             statusCode: status,
+            retryable: false,
+          });
+        }
+        if (status === 400) {
+          const detail = JSON.stringify(err.response?.data ?? {});
+          throw new FetchError({
+            code: 'PARSE_ERROR',
+            supplierId: this.supplierId,
+            message: `Requête invalide (400) — ${detail}`,
+            statusCode: 400,
             retryable: false,
           });
         }
@@ -158,10 +242,8 @@ export class RexelAdapter extends SupplierAdapter {
       });
     }
 
-    // Stock: in stock if any delivery availability has available > 0
     const hasStock = line.availabilities?.some(
-      (a) =>
-        a.type === 'DELIVERY_BRANCH_AVAILABILITY' && (a.quantity?.available ?? 0) > 0
+      (a) => a.type === 'DELIVERY_BRANCH_AVAILABILITY' && (a.quantity?.available ?? 0) > 0
     ) ?? false;
 
     return {
@@ -172,4 +254,3 @@ export class RexelAdapter extends SupplierAdapter {
     };
   }
 }
-
