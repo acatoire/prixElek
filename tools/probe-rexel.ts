@@ -4,10 +4,15 @@
  * Probes the Rexel price API.
  *
  * Usage:
- *   npx tsx tools/probe-rexel.ts <bearer-token> [sku] [branchId]
+ *   npx tsx tools/probe-rexel.ts <bearer-token> [sku] [branchId] [zipcode] [city]
  *
  * Default SKU:      70569480 (Legrand Céliane 4x2P+T)
  * Default branchId: 4413
+ * Default zipcode:  44880
+ * Default city:     SAUTRON
+ *
+ * After a successful probe, don't forget to rebuild the app:
+ *   npm run build
  *
  * The correct body shape (discovered from F12 DevTools on rexel.fr):
  *   {
@@ -146,7 +151,11 @@ async function main(): Promise<void> {
   }
 
   console.log('\n' + '='.repeat(60));
-  console.log('Done.');
+  if (ok) {
+    console.log('✅  Done. Request shape confirmed — run  npm run build  to rebuild the app.');
+  } else {
+    console.log('❌  Done. No variant succeeded. Check your token / branchId / zipcode / city.');
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

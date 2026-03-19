@@ -10,7 +10,6 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
 import { RexelAdapter, decodeRexelToken, extractAccountId, extractWebshopId, extractApiKey } from './rexel';
-import { FetchError } from '@/types/error';
 
 const SKU = '70569480';
 const API_URL = 'https://eu.dif.rexel.com/web/api/v3/product/priceandavailability';
