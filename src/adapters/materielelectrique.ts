@@ -242,7 +242,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
       const sku = rawSku.replace(/[^A-Z0-9]/gi, '').toUpperCase();
       const mpn = rawMpn.replace(/[^A-Z0-9]/gi, '').toUpperCase();
       if (sku === normalizedRef || mpn === normalizedRef) {
-        return obj as SchemaProduct;
+        return obj as unknown as SchemaProduct;
       }
     }
 

@@ -35,7 +35,7 @@ function findProductInHtml(html: string): SchemaProduct | null {
     const text = block.replace(/<\/?script[^>]*>/gi, '').trim();
     try {
       const obj = JSON.parse(text) as Record<string, unknown>;
-      if (obj['@type'] === 'Product') return obj as SchemaProduct;
+      if (obj['@type'] === 'Product') return obj as unknown as SchemaProduct;
     } catch { continue; }
   }
   return null;

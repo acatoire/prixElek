@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { Material, Catalog } from '@/types/material';
+import type { Material } from '@/types/material';
 import { loadAllMaterialsWithSource } from '@/services/CatalogService';
 import { exportCatalogueAsZip } from '@/services/catalogueZip';
 

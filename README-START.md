@@ -19,18 +19,7 @@ structure.
 
 ## 1. Initial Setup on Windows
 
-### Step 1: Clone the Repository
-
-```powershell
-# Navigate to your workspace
-cd C:\git  # or your preferred location
-
-# Clone the repo
-git clone https://github.com/yourusername/prixElek.git
-cd prixElek
-```
-
-### Step 2: Install Dependencies
+### Step 1: Install Dependencies
 
 ```powershell
 # Install Node dependencies
@@ -41,32 +30,7 @@ npm --version
 node --version
 ```
 
-### Step 3: Create Configuration Files
-
-```powershell
-# Create config directory if it doesn't exist
-New-Item -ItemType Directory -Path config -ErrorAction SilentlyContinue
-
-# Create catalogue.json (starter template)
-@{
-    materiaux = @(
-        @{
-            id = "prise-2p-t-legrand"
-            nom = "Prise 2P+T"
-            marque = "Legrand"
-            categorie = "Appareillage"
-            references_fournisseurs = @{
-                rexel = "LEG-050430"
-            }
-        }
-    )
-} | ConvertTo-Json | Out-File config\catalogue.json -Encoding UTF8
-
-# Create .env file (credentials NOT committed to git)
-# Note: fournisseurs.json should also be in .gitignore
-```
-
-### Step 4: Start Development Server
+### Step 2: Start Development Server
 
 ```powershell
 # Start the development server
@@ -263,13 +227,6 @@ Get-ChildItem dist/
 # Preview production build locally
 npm run preview
 ```
-
-### Deploy on production
-
-To deploy you need to have push `dist/` to your branch and got it merged on the main branch.
-Create a new release on GitHub.
-└── The release will trigger the rebase-prod workflow that will merge the main branch into the production branch
-    └──This will trigger the web-deploy workflow that will deploy it to production using ftp.
 
 ---
 

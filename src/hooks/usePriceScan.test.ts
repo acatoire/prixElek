@@ -53,12 +53,6 @@ const MOCK_PRICE: SupplierPrice = {
   fetchedAt: new Date().toISOString(), // fresh — now
 };
 
-const STALE_PRICE: SupplierPrice = {
-  prix_ht: 10.0,
-  stock: 1,
-  unite: 'pièce',
-  fetchedAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), // 25h ago → stale
-};
 
 // ── buildIdleMatrix ───────────────────────────────────────────────────────────
 

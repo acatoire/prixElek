@@ -1,0 +1,37 @@
+
+name: 🔄 Rebase Prod from Main
+
+on:
+  workflow_dispatch:  # Allows manual trigger from the Actions tab
+
+permissions:  # Add permissions for the GITHUB_TOKEN
+  contents: write
+  actions: write
+
+jobs:
+  rebase-prod:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+      
+      - name: 🔄 Rebase prod branch
+        run: |
+          git checkout prod
+          git rebase --reapply-cherry-picks main
+          git push --force-with-lease origin prod
+          
+      - name: 🚀 Trigger web-deploy workflow
+        run: |
+          gh workflow run web-deploy.yml --ref prod
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
