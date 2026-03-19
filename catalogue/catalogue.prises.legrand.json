@@ -18,7 +18,7 @@
     "categorie": "Prise de courant",
     "references_fournisseurs": {
       "materielelectrique": "LEGCC0111",
-      "rexel": null,
+      "rexel": "74266292",
       "sonepar": null,
       "yesss": null
     }
@@ -30,7 +30,7 @@
     "categorie": "Prise de courant",
     "references_fournisseurs": {
       "materielelectrique": "LEG067124",
-      "rexel": null,
+      "rexel": "70569681",
       "sonepar": null,
       "yesss": null
     }
@@ -42,7 +42,7 @@
     "categorie": "Prise de courant",
     "references_fournisseurs": {
       "materielelectrique": "LEG067111",
-      "rexel": null,
+      "rexel": "62431845",
       "sonepar": null,
       "yesss": null
     }
