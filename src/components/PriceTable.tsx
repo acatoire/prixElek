@@ -23,6 +23,9 @@ interface PriceTableProps {
   onStop: () => void;
   onEdit: (material: Material) => void;
   toolbar?: React.ReactNode;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: (ids: string[], selected: boolean) => void;
 }
 
 export function PriceTable({
@@ -33,6 +36,9 @@ export function PriceTable({
   onStop,
   onEdit,
   toolbar,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: PriceTableProps): React.ReactElement {
   const lastUpdated = Object.values(prices)
     .flatMap((row) => Object.values(row))
@@ -41,6 +47,10 @@ export function PriceTable({
     .sort()
     .at(-1);
 
+  const allSelected = materials.length > 0 && materials.every((m) => selectedIds.has(m.id));
+  const someSelected = !allSelected && materials.some((m) => selectedIds.has(m.id));
+  const selectedCount = materials.filter((m) => selectedIds.has(m.id)).length;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* ── Toolbar ── */}
@@ -48,6 +58,14 @@ export function PriceTable({
         <div>
           <h2 className="text-sm font-semibold text-gray-900">
             Catalogue — {materials.length} article{materials.length > 1 ? 's' : ''}
+            {selectedCount > 0 && (
+              <span
+                data-testid="selection-badge"
+                className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700"
+              >
+                {selectedCount} sélectionné{selectedCount > 1 ? 's' : ''}
+              </span>
+            )}
           </h2>
           {lastUpdated && (
             <p className="text-xs text-gray-400 mt-0.5">
@@ -109,6 +127,18 @@ export function PriceTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
+                {/* Select-all checkbox */}
+                <th className="px-4 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={(e) => onToggleSelectAll(materials.map((m) => m.id), e.target.checked)}
+                    className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
+                    title="Tout sélectionner"
+                    aria-label="Tout sélectionner"
+                  />
+                </th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/2">
                   Matériel
                 </th>
@@ -132,40 +162,55 @@ export function PriceTable({
               </tr>
             </thead>
             <tbody>
-              {materials.map((material, idx) => (
-                <tr
-                  key={material.id}
-                  className={[
-                    'border-b border-gray-50 transition-colors group',
-                    idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
-                    'hover:bg-orange-50/30',
-                  ].join(' ')}
-                >
-                  <td className="px-5 py-3.5 font-medium text-gray-800">{material.nom}</td>
-                  <td className="px-4 py-3.5 text-gray-500">{material.marque}</td>
-                  <td className="px-4 py-3.5">
-                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-                      {material.categorie}
-                    </span>
-                  </td>
-                  {SUPPLIERS.map((s) => (
-                    <td key={s.id} className="px-5 py-3.5 text-right">
-                      <PriceCellDisplay cell={prices[material.id]?.[s.id]} />
+              {materials.map((material, idx) => {
+                const isSelected = selectedIds.has(material.id);
+                return (
+                  <tr
+                    key={material.id}
+                    className={[
+                      'border-b border-gray-50 transition-colors group',
+                      isSelected
+                        ? 'bg-orange-50/60'
+                        : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
+                      'hover:bg-orange-50/40',
+                    ].join(' ')}
+                  >
+                    {/* Checkbox */}
+                    <td className="px-4 py-3.5">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onToggleSelect(material.id)}
+                        className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
+                        aria-label={`Sélectionner ${material.nom}`}
+                      />
                     </td>
-                  ))}
-                  {/* Edit button */}
-                  <td className="px-3 py-3.5 text-right">
-                    <button
-                      onClick={() => onEdit(material)}
-                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-orange-500 transition-opacity focus:opacity-100 p-1 rounded"
-                      title="Modifier cet article"
-                      aria-label={`Modifier ${material.nom}`}
-                    >
-                      ✏️
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="px-5 py-3.5 font-medium text-gray-800">{material.nom}</td>
+                    <td className="px-4 py-3.5 text-gray-500">{material.marque}</td>
+                    <td className="px-4 py-3.5">
+                      <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                        {material.categorie}
+                      </span>
+                    </td>
+                    {SUPPLIERS.map((s) => (
+                      <td key={s.id} className="px-5 py-3.5 text-right">
+                        <PriceCellDisplay cell={prices[material.id]?.[s.id]} />
+                      </td>
+                    ))}
+                    {/* Edit button */}
+                    <td className="px-3 py-3.5 text-right">
+                      <button
+                        onClick={() => onEdit(material)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-orange-500 transition-opacity focus:opacity-100 p-1 rounded"
+                        title="Modifier cet article"
+                        aria-label={`Modifier ${material.nom}`}
+                      >
+                        ✏️
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
