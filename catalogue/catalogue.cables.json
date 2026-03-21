@@ -1,26 +1,42 @@
 [
   {
     "id": "NEX01272241N",
-    "nom": "Fil électrique rigide Nexans EASYFIL® 3 HO7V-U 2,5mm² couronne de 100m",
+    "nom": "Fil électrique rigide Nexans EASYFIL® 3 HO7V-U 2,5mm²",
     "marque": "Nexans",
-    "categorie": "Fil électrique",
+    "categorie": "cables",
     "references_fournisseurs": {
       "materielelectrique": "fil-electrique-rigide-nexans-easyfil-r-3-ho7v-u-2-5mm2-couronne-de-100m-p-686448",
       "rexel": "71487492",
       "sonepar": null,
       "yesss": null
+    },
+    "cable": {
+      "unite_base": "ml",
+      "packaging": {
+        "materielelectrique": { "lot_metres": 100, "prix_base": "metre" },
+        "rexel":              { "lot_metres": 25, "prix_base": "lot" }
+      }
     }
   },
   {
     "id": "NEX01272240N",
     "nom": "Fil électrique rigide Nexans EASYFIL® 3 HO7V-U 1,5mm²",
     "marque": "Nexans",
-    "categorie": "Fil électrique",
+    "categorie": "cables",
     "references_fournisseurs": {
       "materielelectrique": "fil-electrique-rigide-nexans-easyfil-r-3-ho7v-u-1-5mm2-1-p-651937",
       "rexel": "71343551",
       "sonepar": null,
       "yesss": null
+    },
+    "cable": {
+      "unite_base": "ml",
+      "packaging": {
+        "materielelectrique": { "lot_metres": 100, "prix_base": "metre" },
+        "rexel":              { "lot_metres": 25, "prix_base": "lot" }
+      }
     }
   }
 ]
+
+

@@ -10,9 +10,11 @@
  */
 import React, {useRef, useCallback, useState, useMemo} from 'react';
 import type {Material} from '@/types/material';
+import {isCableMaterial} from '@/types/material';
 import type {PriceMatrix} from '@/types/price';
 import type {UseCommandeReturn} from '@/hooks/useCommande';
 import {SUPPLIERS} from '@/config/suppliers';
+import {calcCablePurchase, compareCableSuppliers} from '@/services/CableCalculator';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -51,16 +53,38 @@ function buildEmailBody(
   const lines = items
     .map((item) => {
       const ref = item.material.references_fournisseurs[supplierId] ?? '—';
+      const cable = isCableMaterial(item.material);
+      if (cable) {
+        const packaging = item.material.cable!.packaging[supplierId];
+        if (packaging && item.prix_ht !== null) {
+          const { lotsNeeded, metresBought, totalPrice, surMesure } = calcCablePurchase({
+            neededMetres: item.quantity,
+            packaging,
+            unitPrice: item.prix_ht,
+          });
+          const lotDesc = surMesure
+            ? `${item.quantity} m sur mesure`
+            : `${lotsNeeded} × ${packaging.lot_metres} m = ${metresBought} m`;
+          return `  - ${item.material.nom} (réf. ${ref})  ${lotDesc}  =  ${totalPrice !== null ? fmt(totalPrice) : '—'}`;
+        }
+        return `  - ${item.material.nom} (réf. ${ref})  ${item.quantity} m  prix inconnu`;
+      }
       const price = item.prix_ht !== null ? fmt(item.prix_ht) : 'prix inconnu';
       const total = item.prix_ht !== null ? fmt(item.prix_ht * item.quantity) : '—';
       return `  - ${item.material.nom} (réf. ${ref})  ×${item.quantity}  ${price}/u  =  ${total}`;
     })
     .join('\n');
 
-  const total = items.reduce(
-    (acc, i) => (i.prix_ht !== null ? acc + i.prix_ht * i.quantity : acc),
-    0
-  );
+  const total = items.reduce((acc, i) => {
+    if (i.prix_ht === null) return acc;
+    if (isCableMaterial(i.material)) {
+      const packaging = i.material.cable!.packaging[supplierId];
+      if (!packaging) return acc;
+      const { totalPrice } = calcCablePurchase({ neededMetres: i.quantity, packaging, unitPrice: i.prix_ht });
+      return totalPrice !== null ? acc + totalPrice : acc;
+    }
+    return acc + i.prix_ht * i.quantity;
+  }, 0);
 
   return (
     `Commande prixElek — ${date}\n` +
@@ -140,8 +164,16 @@ export function CommandeTab({
       const total = selectedMaterials.reduce((acc, m) => {
         const cell = prices[m.id]?.[s.id];
         const price = cell?.status === 'success' ? (cell.data?.prix_ht ?? null) : null;
+        if (price === null) return acc;
+        if (isCableMaterial(m)) {
+          const packaging = m.cable!.packaging[s.id];
+          if (!packaging) return acc;
+          const qty = Math.max(1, quantities[m.id] ?? 1);
+          const { totalPrice } = calcCablePurchase({ neededMetres: qty, packaging, unitPrice: price });
+          return totalPrice !== null ? acc + totalPrice : acc;
+        }
         const qty = quantities[m.id] ?? 1;
-        return price !== null ? acc + price * qty : acc;
+        return acc + price * qty;
       }, 0);
       const hasAllPrices = selectedMaterials.every(
         (m) => prices[m.id]?.[s.id]?.status === 'success'
@@ -339,6 +371,135 @@ export function CommandeTab({
                 {/* ── Material rows (hidden when collapsed) ── */}
                 {!isCollapsed && items.map((material, idx) => {
                   const qty = quantities[material.id] ?? 1;
+                  const isCable = isCableMaterial(material);
+
+                  // ── Cable row ──────────────────────────────────────────────
+                  if (isCable) {
+                    const neededMetres = Math.max(1, qty);
+                    // Compute per-supplier cable purchase results
+                    const cableResults = SUPPLIERS.map((s) => {
+                      const unitPrice = prices[material.id]?.[s.id]?.data?.prix_ht ?? null;
+                      const packaging = material.cable!.packaging[s.id];
+                      if (!packaging) {
+                        return { supplierId: s.id, lotsNeeded: 0, metresBought: 0, totalPrice: null, pricePerMetre: null, surMesure: false };
+                      }
+                      return { supplierId: s.id, ...calcCablePurchase({ neededMetres, packaging, unitPrice }) };
+                    });
+                    const compared = compareCableSuppliers(cableResults);
+
+                    return (
+                      <tr
+                        key={material.id}
+                        className={[
+                          'border-b border-gray-50 transition-colors',
+                          idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
+                        ].join(' ')}
+                      >
+                        {/* Material name */}
+                        <td className="px-5 py-3">
+                          <div className="font-medium text-gray-800">{material.nom}</div>
+                          <div className="text-xs text-gray-400">{material.marque}</div>
+                          <div className="text-xs text-blue-500 font-medium mt-0.5">🔌 Câble (prix au mètre)</div>
+                        </td>
+
+                        {/* Metres needed */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={1}
+                              value={neededMetres}
+                              onChange={(e) => setQuantity(material.id, parseInt(e.target.value, 10) || 1)}
+                              className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center
+                                focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            />
+                            <span className="text-xs text-gray-500">m</span>
+                          </div>
+                        </td>
+
+                        {/* Per-supplier cable cost */}
+                        {SUPPLIERS.map((s) => {
+                          const cell = prices[material.id]?.[s.id];
+                          const ref = material.references_fournisseurs[s.id];
+                          const result = compared.find((r) => r.supplierId === s.id);
+                          const packaging = material.cable!.packaging[s.id];
+
+                          if (!ref) {
+                            return (
+                              <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
+                                Non référencé
+                              </td>
+                            );
+                          }
+                          if (!cell || cell.status === 'idle') {
+                            return (
+                              <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">—</td>
+                            );
+                          }
+                          if (cell.status === 'loading') {
+                            return (
+                              <td key={s.id} className="px-5 py-3 text-right">
+                                <span className="text-gray-400 text-xs">…</span>
+                              </td>
+                            );
+                          }
+                          if (cell.status === 'error') {
+                            return (
+                              <td key={s.id} className="px-5 py-3 text-right">
+                                <span className="text-red-400 text-xs" title={cell.errorMessage ?? ''}>⚠ Erreur</span>
+                              </td>
+                            );
+                          }
+                          if (!result || !packaging) {
+                            return <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">—</td>;
+                          }
+
+                          const lotSize = packaging.lot_metres;
+                          return (
+                            <td key={s.id} className="px-5 py-3 text-right">
+                              {/* Total price */}
+                              <div className={`font-semibold tabular-nums ${result.isBest ? 'text-green-600' : 'text-gray-900'}`}>
+                                {result.totalPrice !== null ? fmt(result.totalPrice) : '—'}
+                              </div>
+                              {/* Diff vs best */}
+                              {result.diffFromBest !== undefined && (
+                                <div className="text-xs tabular-nums text-red-300 font-medium">
+                                  {fmtDiff(result.diffFromBest)}
+                                </div>
+                              )}
+                              {/* Lot breakdown */}
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                {result.surMesure
+                                  ? `Sur mesure — ${neededMetres} m`
+                                  : `${result.lotsNeeded} × ${lotSize} m = ${result.metresBought} m livrés`
+                                }
+                              </div>
+                              {/* Price per metre */}
+                              {result.pricePerMetre !== null && (
+                                <div className="text-xs text-gray-400 tabular-nums">
+                                  {result.pricePerMetre.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}/m
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+
+                        {/* Remove */}
+                        <td className="px-3 py-3 text-right">
+                          <button
+                            onClick={() => removeItem(material.id)}
+                            className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded"
+                            title="Retirer de la commande"
+                            aria-label={`Retirer ${material.nom}`}
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  // ── Regular (non-cable) row ────────────────────────────────
 
                   // Compute per-row price comparison
                   const rowPrices = new Map<string, number>();
