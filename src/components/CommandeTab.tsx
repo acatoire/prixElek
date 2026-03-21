@@ -121,6 +121,28 @@ export function CommandeTab({ materials, prices, commande }: CommandeTabProps): 
     [importOrder]
   );
 
+  // ── Shared file input (needed in both empty state and full toolbar) ──────────
+  const loadButton = (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+          bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
+          focus:outline-none focus:ring-2 focus:ring-gray-400"
+        title="Charger une commande sauvegardée"
+      >
+        📂 Charger commande
+      </button>
+    </>
+  );
+
   // ── Empty state ──────────────────────────────────────────────────────────────
   if (selectedMaterials.length === 0) {
     return (
@@ -130,6 +152,7 @@ export function CommandeTab({ materials, prices, commande }: CommandeTabProps): 
         <p className="text-gray-400 text-xs mt-1">
           Cochez des articles dans l'onglet <strong>Catalogue</strong> pour les ajouter ici.
         </p>
+        <div className="mt-6 flex justify-center">{loadButton}</div>
       </div>
     );
   }
@@ -142,22 +165,7 @@ export function CommandeTab({ materials, prices, commande }: CommandeTabProps): 
           Commande — {selectedMaterials.length} article{selectedMaterials.length > 1 ? 's' : ''}
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-              bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
-              focus:outline-none focus:ring-2 focus:ring-gray-400"
-            title="Charger une commande sauvegardée"
-          >
-            📂 Charger commande
-          </button>
+          {loadButton}
           <button
             onClick={exportOrder}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
