@@ -1,0 +1,50 @@
+[
+  {
+    "id": "LEG066631",
+    "nom": "Plaque yesterday (blanc) Legrand Céliane 1 poste",
+    "marque": "Legrand",
+    "categorie": "Façades",
+    "references_fournisseurs": {
+      "materielelectrique": "plaque-yesterday-blanc-legrand-celiane-1-poste-p-297510",
+      "rexel": 70569721,
+      "sonepar": null,
+      "yesss": null
+    }
+  },
+  {
+    "id": "LEG066632",
+    "nom": "Plaque yesterday (blanc) Legrand Céliane 2 postes",
+    "marque": "Legrand",
+    "categorie": "Façades",
+    "references_fournisseurs": {
+      "materielelectrique": "plaque-yesterday-blanc-legrand-celiane-2-postes-p-297511",
+      "rexel": 70569582,
+      "sonepar": null,
+      "yesss": null
+    }
+  },
+  {
+    "id": "LEG066633",
+    "nom": "Plaque yesterday (blanc) Legrand Céliane 3 postes",
+    "marque": "Legrand",
+    "categorie": "Façades",
+    "references_fournisseurs": {
+      "materielelectrique": "plaque-yesterday-blanc-legrand-celiane-3-postes-p-297512",
+      "rexel": 70569525,
+      "sonepar": null,
+      "yesss": null
+    }
+  },
+  {
+    "id": "LEG066634",
+    "nom": "Plaque yesterday (blanc) Legrand Céliane 4 postes",
+    "marque": "Legrand",
+    "categorie": "Façades",
+    "references_fournisseurs": {
+      "materielelectrique": "plaque-yesterday-blanc-legrand-celiane-4-postes-p-297660",
+      "rexel": 70569642,
+      "sonepar": null,
+      "yesss": null
+    }
+  }
+]

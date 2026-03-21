@@ -26,15 +26,15 @@ npx vitest run  # 129 tests, all must pass
 
 ## Project structure
 
-| Path | Purpose |
-|---|---|
-| `src/adapters/` | One adapter per supplier — `getPrice(ref)` → `SupplierPrice` |
-| `src/hooks/` | React hooks (`usePriceScan`, `useRexelAuth`, …) |
-| `src/components/` | UI components |
-| `src/types/` | Shared TypeScript interfaces |
-| `tools/` | CLI dev tools (`probe-rexel.ts`, `add-to-catalogue.ts`, …) |
-| `catalogue/` | Static JSON catalogues |
-| `config/` | Scraping config |
+| Path              | Purpose                                                      |
+|-------------------|--------------------------------------------------------------|
+| `src/adapters/`   | One adapter per supplier — `getPrice(ref)` → `SupplierPrice` |
+| `src/hooks/`      | React hooks (`usePriceScan`, `useRexelAuth`, …)              |
+| `src/components/` | UI components                                                |
+| `src/types/`      | Shared TypeScript interfaces                                 |
+| `tools/`          | CLI dev tools (`probe-rexel.ts`, `add-to-catalogue.ts`, …)   |
+| `catalogue/`      | Static JSON catalogues                                       |
+| `config/`         | Scraping config                                              |
 
 ## Language & code standards
 
@@ -97,11 +97,31 @@ The Rexel price API (`/web/api/v3/product/priceandavailability`) requires:
 {
   "accountId": "...",
   "branchId": "4413",
-  "pickupOptions": { "branchCode": "4413" },
-  "deliveryOptions": { "branchCode": "4413", "location": { "country": "FR", "zipcode": "44880", "city": "SAUTRON" } },
-  "stockReturnedOptions": { "includeDCStock": true, "includeBranchStock": true, "includeDelay": true },
+  "pickupOptions": {
+    "branchCode": "4413"
+  },
+  "deliveryOptions": {
+    "branchCode": "4413",
+    "location": {
+      "country": "FR",
+      "zipcode": "44880",
+      "city": "SAUTRON"
+    }
+  },
+  "stockReturnedOptions": {
+    "includeDCStock": true,
+    "includeBranchStock": true,
+    "includeDelay": true
+  },
   "includeLeasePrice": true,
-  "lines": [{ "sku": "71041542", "quantity": { "number": 1 } }]
+  "lines": [
+    {
+      "sku": "71041542",
+      "quantity": {
+        "number": 1
+      }
+    }
+  ]
 }
 ```
 

@@ -139,11 +139,11 @@ export function extractProductFromHtml(html: string, url: string): ExtractedProd
   const ean = product.offers?.gtin13 ?? null;
 
   return {
-    id: slugFromUrl(url),
+    id: sku,
     nom: name,
     marque,
     categorie,
-    reference: sku,
+    reference: slugFromUrl(url),
     ean,
   };
 }

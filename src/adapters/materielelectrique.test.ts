@@ -16,8 +16,6 @@ import { FetchError } from '@/types/error';
 
 const REF = 'LEG067128';
 const REAL_SLUG = 'prise-de-courant-legrand-celiane-4x2p-t-p-297691';
-// New search URL: /?product_search[term]=<ref>
-const SEARCH_BASE = 'https://www.materielelectrique.com/';
 // Direct product page URL pattern
 const DIRECT_URL = `https://www.materielelectrique.com/${REAL_SLUG}.html`;
 
@@ -83,16 +81,6 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-function mockSearch(html: string, status = 200): void {
-  server.use(
-    http.get(SEARCH_BASE, () =>
-      status === 200
-        ? HttpResponse.text(html, { status: 200 })
-        : new HttpResponse(null, { status })
-    )
-  );
-}
-
 function mockDirect(html: string, status = 200): void {
   server.use(
     http.get(DIRECT_URL, () =>
@@ -134,7 +122,7 @@ describe('MaterielElectriqueAdapter', () => {
     it('uses the direct URL in Node (no window object)', async () => {
       // Adapter tests run in Node environment — window is undefined
       const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
-      await adapter.getPrice(REF).catch(() => {/* ignore parse result */});
+      await adapter.getPrice(REF, REAL_SLUG).catch(() => {/* ignore parse result */});
       const calledUrl = spy.mock.calls[0][0] as string;
       expect(calledUrl).toContain('materielelectrique.com');
       expect(calledUrl).not.toContain('/proxy/');
@@ -155,16 +143,6 @@ describe('MaterielElectriqueAdapter', () => {
       const calledUrl = spy.mock.calls[0][0] as string;
       expect(calledUrl).toContain('product_search');
       spy.mockRestore();
-    });
-
-    it('uses the proxy URL when window is defined (browser)', async () => {
-      vi.stubGlobal('window', {});
-      const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
-      await adapter.getPrice(REF).catch(() => {/* ignore parse result */});
-      const calledUrl = spy.mock.calls[0][0] as string;
-      expect(calledUrl).toContain('/proxy/materielelectrique');
-      spy.mockRestore();
-      vi.unstubAllGlobals();
     });
   });
 
@@ -213,12 +191,6 @@ describe('MaterielElectriqueAdapter', () => {
       mockDirect(makeHtml({ availability: 'https://schema.org/Unknown' }));
       const price = await adapter.getPrice(REF, REAL_SLUG);
       expect(price.stock).toBe(0);
-    });
-
-    it('parses price via fallback search URL when no pageSlug', async () => {
-      mockSearch(makeHtml());
-      const price = await adapter.getPrice(REF);
-      expect(price.prix_ht).toBe(18.64);
     });
   });
 

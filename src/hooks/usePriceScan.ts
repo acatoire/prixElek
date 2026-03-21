@@ -129,8 +129,9 @@ export function usePriceScan(): UsePriceScanReturn {
 
           try {
             let price;
+
             if (s.id === 'materielelectrique') {
-              price = await meAdapter.getPrice(ref, material.id);
+              price = await meAdapter.getPrice(material.id, ref );
             } else if (s.id === 'rexel') {
               if (!rexelAdapter) {
                 setCell(material.id, s.id, { status: 'error', data: null, errorMessage: 'Non connecté à Rexel' });
@@ -140,6 +141,7 @@ export function usePriceScan(): UsePriceScanReturn {
             } else {
               return;
             }
+
             setCell(material.id, s.id, { status: 'success', data: price, errorMessage: null });
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);

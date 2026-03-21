@@ -1,47 +1,47 @@
 [
   {
-    "id": "prise-de-courant-legrand-celiane-4x2p-t-compacte-precablee-standard-francais-p-297691",
+    "id": "LEG067128",
     "nom": "Prise de courant Céliane 4x2P+T compacte précâblée standard français",
     "marque": "Legrand",
     "categorie": "Prise de courant",
     "references_fournisseurs": {
-      "materielelectrique": "LEG067128",
+      "materielelectrique": "prise-de-courant-legrand-celiane-4x2p-t-compacte-precablee-standard-francais-p-297691",
       "rexel": "70569480",
       "sonepar": null,
       "yesss": null
     }
   },
   {
-    "id": "prise-2p-t-celiane-surface-confort-bornes-automatiques-premontee-blanc-p-674954",
+    "id": "LEGCC0111",
     "nom": "Prise 2p+t céliane surface confort - bornes automatiques - prémontée blanc",
     "marque": "Legrand",
     "categorie": "Prise de courant",
     "references_fournisseurs": {
-      "materielelectrique": "LEGCC0111",
+      "materielelectrique": "prise-2p-t-celiane-surface-confort-bornes-automatiques-premontee-blanc-p-674954",
       "rexel": "74266292",
       "sonepar": null,
       "yesss": null
     }
   },
   {
-    "id": "prise-de-courant-legrand-celiane-2x2p-t-precablee-standard-francais-p-297670",
+    "id": "LEG067124",
     "nom": "Prise de courant Legrand Céliane 2x2P+T précâblée standard français",
     "marque": "Legrand",
     "categorie": "Prise de courant",
     "references_fournisseurs": {
-      "materielelectrique": "LEG067124",
+      "materielelectrique": "prise-de-courant-legrand-celiane-2x2p-t-precablee-standard-francais-p-297670",
       "rexel": "70569681",
       "sonepar": null,
       "yesss": null
     }
   },
   {
-    "id": "prise-de-courant-2p-t-legrand-celiane-bornes-automatique-16a-250v-standard-francais-p-7831",
+    "id": "LEG067111",
     "nom": "Prise de courant 2P+T Legrand Céliane bornes automatique 16A 250V standard français",
     "marque": "Legrand",
     "categorie": "Prise de courant",
     "references_fournisseurs": {
-      "materielelectrique": "LEG067111",
+      "materielelectrique": "prise-de-courant-2p-t-legrand-celiane-bornes-automatique-16a-250v-standard-francais-p-7831",
       "rexel": "62431845",
       "sonepar": null,
       "yesss": null

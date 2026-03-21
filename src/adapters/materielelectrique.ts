@@ -19,9 +19,9 @@
  */
 
 import axios from 'axios';
-import { SupplierAdapter } from './base';
-import { FetchError } from '@/types/error';
-import type { SupplierPrice } from '@/types/price';
+import {SupplierAdapter} from './base';
+import {FetchError} from '@/types/error';
+import type {SupplierPrice} from '@/types/price';
 
 const BASE_URL = 'https://www.materielelectrique.com';
 
@@ -61,7 +61,7 @@ export const DEFAULT_SCRAPING_CONFIG: ScrapingConfig = {
  * Accepts an optional override for testability.
  */
 export function loadScrapingConfig(override?: Partial<ScrapingConfig>): ScrapingConfig {
-  return { ...DEFAULT_SCRAPING_CONFIG, ...override };
+  return {...DEFAULT_SCRAPING_CONFIG, ...override};
 }
 
 // ── Schema.org types ──────────────────────────────────────────────────────────
@@ -118,12 +118,8 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
   /**
    * Fetches the product page for the given reference and parses the JSON-LD block.
    *
-   * @param reference - The supplier SKU (e.g. "LEG067128") used to match the JSON-LD block.
-   * @param pageSlug  - Optional URL slug of the product page (e.g. the catalogue material id
+   * @param pageSlug  - URL slug of the product page (e.g. the catalogue material id
    *                    "prise-de-courant-legrand-celiane-4x2p-t-p-297691").
-   *                    When provided the adapter fetches /{pageSlug}.html directly, which is
-   *                    far more reliable than the site's search endpoint.
-   *                    Falls back to the search URL when absent.
    */
   async getPrice(reference: string, pageSlug?: string): Promise<SupplierPrice> {
     await this.throttle();
@@ -132,9 +128,16 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
     // pattern (-p-<digits>), which means it was scraped and is reliable.
     // Fall back to the site's search for manually-entered slugs without a numeric id.
     const isRealSlug = pageSlug && /-p-\d+$/.test(pageSlug);
-    const productUrl = isRealSlug
-      ? `${getBaseUrl()}/${pageSlug}.html`
-      : `${getBaseUrl()}/?product_search[term]=${encodeURIComponent(reference)}`;
+    const productUrl = `${getBaseUrl()}/${pageSlug}.html`;
+    if (!isRealSlug) {
+      // For materielelectrique we cannot search
+      throw new FetchError({
+        code: 'SEARCH_NOT_POSSIBLE',
+        supplierId: this.supplierId,
+        message: `La référence fournie ("${pageSlug}") n'est pas un identifiant de page valide. `,
+        retryable: true,
+      });
+    }
     let html: string;
 
     try {
