@@ -7,44 +7,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { Material } from '@/types/material';
 import { buildMaterialFromExtracted } from '@/hooks/useCatalogue';
-
-// Re-implement a browser-side version of extractProductFromHtml
-// (the tools/lib version uses Node fs — can't run in browser)
-function slugFromUrl(url: string): string {
-  try {
-    const path = new URL(url).pathname;
-    const filename = path.split('/').filter(Boolean).pop() ?? 'unknown';
-    return filename.replace(/\.html?$/i, '');
-  } catch {
-    return 'unknown';
-  }
-}
-
-interface SchemaProduct {
-  '@type': string;
-  name?: string;
-  sku?: string;
-  mpn?: string;
-  brand?: { name?: string } | string;
-  offers?: { gtin13?: string };
-}
-
-function findProductInHtml(html: string): SchemaProduct | null {
-  const blocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) ?? [];
-  for (const block of blocks) {
-    const text = block.replace(/<\/?script[^>]*>/gi, '').trim();
-    try {
-      const obj = JSON.parse(text) as Record<string, unknown>;
-      if (obj['@type'] === 'Product') return obj as unknown as SchemaProduct;
-    } catch { continue; }
-  }
-  return null;
-}
-
-function extractCategoryFromHtml(html: string): string {
-  const m = html.match(/"category"\s*:\s*"([^"]+)"/);
-  return m ? m[1].trim() : 'Appareillage';
-}
+import { extractProductFromHtml } from '@/services/extractProduct';
 
 interface AddFromUrlModalProps {
   onAdd: (material: Material) => boolean;
@@ -90,24 +53,17 @@ export function AddFromUrlModal({ onAdd, onClose }: AddFromUrlModalProps): React
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const html = await res.text();
 
-      const product = findProductInHtml(html);
-      if (!product) throw new Error('Aucun bloc JSON-LD Product trouvé sur cette page.');
+      // extractProductFromHtml is the same logic used by the CLI tools —
+      // single source of truth in src/services/extractProduct.ts
+      const extracted = extractProductFromHtml(html, trimmed);
 
-      const name = product.name ?? '';
-      if (!name) throw new Error('Le JSON-LD ne contient pas de nom produit.');
-      const sku = product.sku ?? product.mpn ?? '';
-      if (!sku) throw new Error('Le JSON-LD ne contient pas de référence (sku/mpn).');
-
-      const brandRaw = product.brand;
-      const brand =
-        typeof brandRaw === 'string' ? brandRaw
-        : typeof brandRaw === 'object' && brandRaw ? (brandRaw.name ?? '') : '';
-
-      setId(slugFromUrl(trimmed));
-      setNom(name);
-      setMarque(brand);
-      setCategorie(extractCategoryFromHtml(html));
-      setRefMe(sku);
+      // id  = SKU   (stable product identifier, e.g. "LEG092022")
+      // ref = slug  (materielelectrique.com URL slug, used by the adapter)
+      setId(extracted.id);
+      setNom(extracted.nom);
+      setMarque(extracted.marque);
+      setCategorie(extracted.categorie);
+      setRefMe(extracted.reference);
       setAlreadyExists(false);
       setStep('confirm');
     } catch (err: unknown) {
@@ -205,11 +161,13 @@ export function AddFromUrlModal({ onAdd, onClose }: AddFromUrlModalProps): React
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Identifiant (slug)</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Identifiant <span className="text-gray-400 font-normal">(réf. Matériel Électrique / SKU)</span>
+                  </label>
                   <input
                     value={id}
                     onChange={(e) => setId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                 </div>
                 <div>
@@ -239,11 +197,13 @@ export function AddFromUrlModal({ onAdd, onClose }: AddFromUrlModalProps): React
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Référence Matériel Électrique</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Référence Matériel Électrique <span className="text-gray-400 font-normal">(slug URL)</span>
+                  </label>
                   <input
                     value={refMe}
                     onChange={(e) => setRefMe(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                 </div>
               </div>

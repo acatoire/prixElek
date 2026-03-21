@@ -4,87 +4,28 @@
  * Fetches a materielelectrique.com product page URL and extracts
  * the structured product data needed to populate a catalogue entry.
  *
- * This is the shared logic used by add-to-catalogue.ts and its tests.
+ * Pure extraction logic lives in src/services/extractProduct.ts and is
+ * shared with the React app — this file only adds the Node/axios fetch layer.
  */
 
 import axios from 'axios';
 import type { ScrapingConfig } from '../../src/adapters/materielelectrique';
 import { DEFAULT_SCRAPING_CONFIG } from '../../src/adapters/materielelectrique';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Re-export everything so existing importers (catalogue-io, tests, add-to-catalogue)
+// don't need to change their import paths.
+export type { ExtractedProduct } from '@/services/extractProduct';
+export {
+  slugFromUrl,
+  findProductInHtml,
+  extractCategoryFromHtml,
+  extractProductFromHtml,
+} from '@/services/extractProduct';
 
-export interface ExtractedProduct {
-  /** Slug derived from the URL slug portion */
-  id: string;
-  /** Product name from JSON-LD */
-  nom: string;
-  /** Brand name from JSON-LD */
-  marque: string;
-  /** Category derived from breadcrumb or GTM dataLayer */
-  categorie: string;
-  /** Supplier reference (SKU) for materielelectrique.com */
-  reference: string;
-  /** EAN-13 barcode if present */
-  ean: string | null;
-}
+import { extractProductFromHtml } from '@/services/extractProduct';
+import type { ExtractedProduct } from '@/services/extractProduct';
 
-interface SchemaProduct {
-  '@type': string;
-  name?: string;
-  sku?: string;
-  mpn?: string;
-  brand?: { name?: string } | string;
-  offers?: { gtin13?: string };
-  category?: string;
-}
-
-// ── Slug derivation ───────────────────────────────────────────────────────────
-
-/**
- * Derives a stable catalogue id from a materielelectrique.com URL.
- * Input:  https://www.materielelectrique.com/prise-2p-t-legrand-p-123.html
- * Output: prise-2p-t-legrand-p-123
- */
-export function slugFromUrl(url: string): string {
-  const path = new URL(url).pathname;
-  const filename = path.split('/').filter(Boolean).pop() ?? 'unknown';
-  return filename.replace(/\.html?$/i, '');
-}
-
-// ── JSON-LD extraction ────────────────────────────────────────────────────────
-
-/**
- * Finds the first schema.org/Product block in the HTML.
- * Returns null if none found.
- */
-export function findProductInHtml(html: string): SchemaProduct | null {
-  const blocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) ?? [];
-  for (const block of blocks) {
-    const text = block.replace(/<\/?script[^>]*>/gi, '').trim();
-    try {
-      const obj = JSON.parse(text) as Record<string, unknown>;
-      if (obj['@type'] === 'Product') return obj as unknown as SchemaProduct;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-/**
- * Extracts category from dataLayer.push() GTM call if present.
- * Falls back to 'Appareillage'.
- */
-export function extractCategoryFromHtml(html: string): string {
-  const match = html.match(/"category"\s*:\s*"([^"]+)"/);
-  if (!match) return 'Appareillage';
-  // The GTM dataLayer often escapes non-ASCII as \uXXXX — unescape them
-  return match[1].trim().replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
-    String.fromCharCode(parseInt(hex, 16))
-  );
-}
-
-// ── Main extraction ───────────────────────────────────────────────────────────
+// ── Node/axios fetch layer ────────────────────────────────────────────────────
 
 /**
  * Fetches a product page URL and returns the extracted product data.
@@ -111,40 +52,3 @@ export async function extractProductFromUrl(
     : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
   return extractProductFromHtml(html, url);
 }
-
-/**
- * Pure extraction from already-fetched HTML — used directly in tests.
- */
-export function extractProductFromHtml(html: string, url: string): ExtractedProduct {
-  const product = findProductInHtml(html);
-  if (!product) {
-    throw new Error(`No schema.org/Product JSON-LD found on page: ${url}`);
-  }
-
-  const name = product.name ?? '';
-  if (!name) throw new Error(`Product JSON-LD has no name on: ${url}`);
-
-  const sku = product.sku ?? product.mpn ?? '';
-  if (!sku) throw new Error(`Product JSON-LD has no sku/mpn on: ${url}`);
-
-  const brandRaw = product.brand;
-  const marque =
-    typeof brandRaw === 'string'
-      ? brandRaw
-      : typeof brandRaw === 'object' && brandRaw !== null
-        ? (brandRaw.name ?? '')
-        : '';
-
-  const categorie = extractCategoryFromHtml(html);
-  const ean = product.offers?.gtin13 ?? null;
-
-  return {
-    id: sku,
-    nom: name,
-    marque,
-    categorie,
-    reference: slugFromUrl(url),
-    ean,
-  };
-}
-
