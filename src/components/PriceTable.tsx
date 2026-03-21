@@ -63,6 +63,7 @@ export function PriceTable({
 }: PriceTableProps): React.ReactElement {
   // Set of collapsed category names (all expanded by default)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleCategory = (categorie: string) => {
     setCollapsedCategories((prev) => {
@@ -73,16 +74,28 @@ export function PriceTable({
     });
   };
 
-  // Group materials by categorie, preserving insertion order
+  // Filter materials by search query (nom, marque, categorie)
+  const filteredMaterials = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return materials;
+    return materials.filter(
+      (m) =>
+        m.nom.toLowerCase().includes(q) ||
+        m.marque.toLowerCase().includes(q) ||
+        m.categorie.toLowerCase().includes(q)
+    );
+  }, [materials, searchQuery]);
+
+  // Group filtered materials by categorie, preserving insertion order
   const groups = useMemo(() => {
     const map = new Map<string, Material[]>();
-    for (const m of materials) {
+    for (const m of filteredMaterials) {
       const cat = m.categorie || 'Autre';
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(m);
     }
     return map;
-  }, [materials]);
+  }, [filteredMaterials]);
 
   const allCollapsed = groups.size > 0 && collapsedCategories.size === groups.size;
 
@@ -101,12 +114,14 @@ export function PriceTable({
     .sort()
     .at(-1);
 
-  const allSelected = materials.length > 0 && materials.every((m) => selectedIds.has(m.id));
-  const someSelected = !allSelected && materials.some((m) => selectedIds.has(m.id));
+  const allSelected = filteredMaterials.length > 0 && filteredMaterials.every((m) => selectedIds.has(m.id));
+  const someSelected = !allSelected && filteredMaterials.some((m) => selectedIds.has(m.id));
   const selectedCount = materials.filter((m) => selectedIds.has(m.id)).length;
 
   // Total number of columns (checkbox + nom + suppliers + edit) — no marque column
   const colSpan = 2 + SUPPLIERS.length + 1;
+
+  const isFiltering = searchQuery.trim().length > 0;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -114,7 +129,11 @@ export function PriceTable({
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-wrap gap-3">
         <div>
           <h2 className="text-sm font-semibold text-gray-900">
-            Catalogue — {materials.length} article{materials.length > 1 ? 's' : ''}
+            Catalogue —{' '}
+            {isFiltering
+              ? <><span className="text-orange-600">{filteredMaterials.length}</span> / {materials.length} article{materials.length > 1 ? 's' : ''}</>
+              : <>{materials.length} article{materials.length > 1 ? 's' : ''}</>
+            }
             {selectedCount > 0 && (
               <span
                 data-testid="selection-badge"
@@ -133,6 +152,21 @@ export function PriceTable({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Search filter */}
+          <div className="relative">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔎</span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filtrer…"
+              aria-label="Filtrer le catalogue"
+              className="pl-7 pr-3 py-1.5 w-40 border border-gray-200 rounded-lg text-sm
+                placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400
+                focus:border-transparent transition-colors"
+            />
+          </div>
+
           {/* Catalogue management buttons (import/export/add) */}
           {toolbar}
 
@@ -190,6 +224,17 @@ export function PriceTable({
         <div className="py-16 text-center text-gray-400 text-sm">
           Aucun article dans le catalogue.
         </div>
+      ) : filteredMaterials.length === 0 ? (
+        <div className="py-16 text-center text-gray-400 text-sm">
+          <p className="text-2xl mb-3">🔎</p>
+          <p>Aucun résultat pour <strong className="text-gray-600">« {searchQuery} »</strong></p>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="mt-3 text-xs text-orange-500 hover:underline"
+          >
+            Effacer le filtre
+          </button>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -201,7 +246,7 @@ export function PriceTable({
                     type="checkbox"
                     checked={allSelected}
                     ref={(el) => { if (el) el.indeterminate = someSelected; }}
-                    onChange={(e) => onToggleSelectAll(materials.map((m) => m.id), e.target.checked)}
+                    onChange={(e) => onToggleSelectAll(filteredMaterials.map((m) => m.id), e.target.checked)}
                     className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
                     title="Tout sélectionner"
                     aria-label="Tout sélectionner"
