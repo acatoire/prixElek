@@ -12,6 +12,8 @@ import {
   findProductInHtml,
   extractCategoryFromHtml,
   extractProductFromHtml,
+  extractTiersFromHtml,
+  bestTierForQty,
 } from './extractProduct';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -183,6 +185,125 @@ describe('extractProductFromHtml', () => {
       mpn: undefined as unknown as string,
     });
     expect(() => extractProductFromHtml(html, PRODUCT_URL)).toThrow('no sku/mpn');
+  });
+});
+
+// ── extractTiersFromHtml ──────────────────────────────────────────────────────
+
+/** Minimal HTML with the real `#decreasing-prices` table structure */
+function makeTierHtml(rows: Array<{ qty: number; exVat: string; incVat: string; disc: string }>): string {
+  const rowsHtml = rows.map(r => `
+    <tr>
+      <td class="bg-lightorange">${r.qty}+</td>
+      <td class="bg-lightorange">
+        <span class="ex-vat">${r.exVat}</span>
+        <span class="inc-vat">${r.incVat}</span>
+      </td>
+      <td class="bg-lightorange">${r.disc}</td>
+    </tr>`).join('');
+
+  return `<html><body>
+    <div id="decreasing-prices">
+      <table role="presentation">
+        <thead>
+          <tr>
+            <td>Quantité</td>
+            <td>Prix unitaire</td>
+            <td>Vous gagnez</td>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  </body></html>`;
+}
+
+describe('extractTiersFromHtml', () => {
+  it('returns undefined when no #decreasing-prices section exists', () => {
+    expect(extractTiersFromHtml('<html><body>no tiers here</body></html>')).toBeUndefined();
+  });
+
+  it('returns undefined when table has only a header row', () => {
+    const html = `<html><body><div id="decreasing-prices">
+      <table><thead><tr><td>Quantité</td><td>Prix unitaire</td><td>Vous gagnez</td></tr></thead>
+      <tbody></tbody></table></div></body></html>`;
+    expect(extractTiersFromHtml(html)).toBeUndefined();
+  });
+
+  it('parses two tiers correctly from real-world structure', () => {
+    const html = makeTierHtml([
+      { qty: 1,  exVat: '1,2083€', incVat: '1,45€', disc: '-' },
+      { qty: 20, exVat: '1,1333€', incVat: '1,36€', disc: '6 %' },
+    ]);
+    const tiers = extractTiersFromHtml(html);
+    expect(tiers).toHaveLength(2);
+    expect(tiers![0]).toMatchObject({ minQty: 1,  prix_ht: 1.2083, prix_ttc: 1.45,  discountPct: 0 });
+    expect(tiers![1]).toMatchObject({ minQty: 20, prix_ht: 1.1333, prix_ttc: 1.36,  discountPct: 6 });
+  });
+
+  it('parses tiers when there is a space before the € sign (real site format)', () => {
+    const html = makeTierHtml([
+      { qty: 1,  exVat: '1,2083 €', incVat: '1,45 €', disc: '-' },
+      { qty: 20, exVat: '1,1333 €', incVat: '1,36 €', disc: '6 %' },
+    ]);
+    const tiers = extractTiersFromHtml(html);
+    expect(tiers).toHaveLength(2);
+    expect(tiers![0]).toMatchObject({ minQty: 1,  prix_ht: 1.2083, prix_ttc: 1.45,  discountPct: 0 });
+    expect(tiers![1]).toMatchObject({ minQty: 20, prix_ht: 1.1333, prix_ttc: 1.36,  discountPct: 6 });
+  });
+
+  it('sorts tiers ascending by minQty', () => {
+    const html = makeTierHtml([
+      { qty: 50, exVat: '1,00€', incVat: '1,20€', disc: '10 %' },
+      { qty: 1,  exVat: '1,12€', incVat: '1,34€', disc: '-' },
+      { qty: 20, exVat: '1,05€', incVat: '1,26€', disc: '5 %' },
+    ]);
+    const tiers = extractTiersFromHtml(html);
+    expect(tiers!.map(t => t.minQty)).toEqual([1, 20, 50]);
+  });
+
+  it('parses three tiers', () => {
+    const html = makeTierHtml([
+      { qty: 1,   exVat: '2,00€', incVat: '2,40€', disc: '-' },
+      { qty: 10,  exVat: '1,80€', incVat: '2,16€', disc: '10 %' },
+      { qty: 100, exVat: '1,60€', incVat: '1,92€', disc: '20 %' },
+    ]);
+    const tiers = extractTiersFromHtml(html);
+    expect(tiers).toHaveLength(3);
+    expect(tiers![2]).toMatchObject({ minQty: 100, discountPct: 20 });
+  });
+});
+
+// ── bestTierForQty ────────────────────────────────────────────────────────────
+
+describe('bestTierForQty', () => {
+  const TIERS = [
+    { minQty: 1,  prix_ht: 1.2083, prix_ttc: 1.45, discountPct: 0 },
+    { minQty: 20, prix_ht: 1.1333, prix_ttc: 1.36, discountPct: 6 },
+    { minQty: 50, prix_ht: 1.05,   prix_ttc: 1.26, discountPct: 13 },
+  ];
+
+  it('returns first tier for qty = 1', () => {
+    expect(bestTierForQty(TIERS, 1).minQty).toBe(1);
+  });
+
+  it('returns first tier for qty below all thresholds', () => {
+    expect(bestTierForQty(TIERS, 0).minQty).toBe(1);
+  });
+
+  it('returns the second tier when qty exactly hits its threshold', () => {
+    expect(bestTierForQty(TIERS, 20).minQty).toBe(20);
+  });
+
+  it('returns the second tier for qty between second and third tier', () => {
+    expect(bestTierForQty(TIERS, 35).minQty).toBe(20);
+  });
+
+  it('returns the third tier when qty >= 50', () => {
+    expect(bestTierForQty(TIERS, 50).minQty).toBe(50);
+    expect(bestTierForQty(TIERS, 200).minQty).toBe(50);
   });
 });
 

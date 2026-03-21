@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PriceCellDisplay } from './PriceCellDisplay';
-import type { PriceCell } from '@/types/price';
+import type { PriceCell, PriceTier } from '@/types/price';
 import type { Material } from '@/types/material';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -146,5 +146,62 @@ describe('PriceCellDisplay', () => {
     // Falls back to raw prix_ht = 75
     expect(screen.getByText(/75/)).toBeInTheDocument();
     expect(screen.queryByText(/\/m/)).not.toBeInTheDocument();
+  });
+
+  // ── Tiered pricing ─────────────────────────────────────────────────────────
+
+  const TIERS: PriceTier[] = [
+    { minQty: 1,  prix_ht: 1.2083, prix_ttc: 1.45, discountPct: 0 },
+    { minQty: 20, prix_ht: 1.1333, prix_ttc: 1.36, discountPct: 6 },
+  ];
+
+  const TIERED_CELL: PriceCell = {
+    status: 'success',
+    data: { prix_ht: 1.2083, prix_ttc: 1.45, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z', tiers: TIERS },
+    errorMessage: null,
+  };
+
+  it('shows 🧮 icon when tiers are present', () => {
+    render(<PriceCellDisplay cell={TIERED_CELL} />);
+    expect(screen.getByText('🧮')).toBeInTheDocument();
+  });
+
+  it('does not show 🧮 icon when no tiers', () => {
+    render(<PriceCellDisplay cell={SUCCESS_CELL} />);
+    expect(screen.queryByText('🧮')).not.toBeInTheDocument();
+  });
+
+  it('does not show 🧮 icon when only one tier (= just the base price)', () => {
+    const singleTier: PriceCell = {
+      status: 'success',
+      data: { prix_ht: 1.20, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z',
+              tiers: [{ minQty: 1, prix_ht: 1.20, prix_ttc: 1.44, discountPct: 0 }] },
+      errorMessage: null,
+    };
+    render(<PriceCellDisplay cell={singleTier} />);
+    expect(screen.queryByText('🧮')).not.toBeInTheDocument();
+  });
+
+  it('shows base price when quantity < first tier threshold', () => {
+    const { container } = render(<PriceCellDisplay cell={TIERED_CELL} quantity={1} />);
+    // The headline .font-semibold span shows the base price (1.2083 → 1,21 €)
+    const headline = container.querySelector('.font-semibold.tabular-nums');
+    expect(headline?.textContent).toMatch(/1,21/);
+  });
+
+  it('shows discounted tier price when quantity >= tier threshold', () => {
+    const { container } = render(<PriceCellDisplay cell={TIERED_CELL} quantity={20} />);
+    // The headline shows the tier price (1.1333 → 1,13 €)
+    const headline = container.querySelector('.font-semibold.tabular-nums');
+    expect(headline?.textContent).toMatch(/1,13/);
+  });
+
+  it('tooltip lists both tiers', () => {
+    render(<PriceCellDisplay cell={TIERED_CELL} />);
+    // Both minQty labels present in tooltip table
+    expect(screen.getByText('1+')).toBeInTheDocument();
+    expect(screen.getByText('20+')).toBeInTheDocument();
+    // Discount column
+    expect(screen.getByText('-6 %')).toBeInTheDocument();
   });
 });

@@ -9,6 +9,9 @@
  *   - tools/lib/extract-product-from-page.ts  (Node CLI, re-exports these + adds axios fetch)
  */
 
+import type { PriceTier } from '@/types/price';
+import { MATERIELELECTRIQUE_VAT_RATE } from '@/config/vatRates';
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ExtractedProduct {
@@ -24,6 +27,8 @@ export interface ExtractedProduct {
   reference: string;
   /** EAN-13 barcode if present */
   ean: string | null;
+  /** Quantity discount tiers, undefined when no tiered pricing exists */
+  tiers?: PriceTier[];
 }
 
 interface SchemaProduct {
@@ -51,6 +56,85 @@ export function slugFromUrl(url: string): string {
   } catch {
     return 'unknown';
   }
+}
+
+// ── Tiered pricing extraction ─────────────────────────────────────────────────
+
+/**
+ * Parses the quantity-discount table inside `id="decreasing-prices"` if present.
+ *
+ * HTML pattern (materielelectrique.com):
+ *   <tbody>
+ *     <tr><td>1+</td><td><span class="ex-vat">1,2083€</span><span class="inc-vat">1,45€</span></td><td>-</td></tr>
+ *     <tr><td>20+</td><td><span class="ex-vat">1,1333€</span><span class="inc-vat">1,36€</span></td><td>6 %</td></tr>
+ *   </tbody>
+ *
+ * Returns undefined when the section is absent.
+ */
+export function extractTiersFromHtml(html: string): PriceTier[] | undefined {
+  const sectionMatch = html.match(/id="decreasing-prices"[\s\S]*?<\/table>/i);
+  if (!sectionMatch) return undefined;
+
+  const section = sectionMatch[0];
+  // Each tier row: <tr>...<td>QTY+</td>...<span class="ex-vat">PRICE€</span>...<td>DISC</td>...</tr>
+  const rowRegex = /<tr[\s\S]*?<\/tr>/gi;
+  const rows = section.match(rowRegex);
+  if (!rows || rows.length < 2) return undefined; // header row only → no tiers
+
+  const tiers: PriceTier[] = [];
+
+  for (const row of rows) {
+    // Skip the header row (contains "Quantité" or "Vous gagnez")
+    if (/Quantit|Prix unitaire|Vous gagnez/i.test(row)) continue;
+
+    // Min quantity: "20+" or "1+"
+    const qtyMatch = row.match(/<td[^>]*>\s*(\d+)\+?\s*<\/td>/i);
+    if (!qtyMatch) continue;
+    const minQty = parseInt(qtyMatch[1], 10);
+
+    // HT price from ex-vat span: "1,1333 €" or "1,1333€" → 1.1333
+    const htMatch = row.match(/class="ex-vat"[^>]*>([\d,\.]+)\s*€/i);
+    // TTC price from inc-vat span
+    const ttcMatch = row.match(/class="inc-vat"[^>]*>([\d,\.]+)\s*€/i);
+
+    if (!htMatch && !ttcMatch) continue;
+
+    let prix_ht: number;
+    let prix_ttc: number;
+
+    if (htMatch) {
+      prix_ht = parseFloat(htMatch[1].replace(',', '.'));
+      prix_ttc = ttcMatch
+        ? parseFloat(ttcMatch[1].replace(',', '.'))
+        : Math.round(prix_ht * (1 + MATERIELELECTRIQUE_VAT_RATE) * 100) / 100;
+    } else {
+      prix_ttc = parseFloat(ttcMatch![1].replace(',', '.'));
+      prix_ht = Math.round((prix_ttc / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 10000) / 10000;
+    }
+
+    // Discount percentage — last <td> of the row, "-" for the base tier
+    const discMatch = row.match(/<td[^>]*>\s*(\d+)\s*%\s*<\/td>/i);
+    const discountPct = discMatch ? parseInt(discMatch[1], 10) : 0;
+
+    tiers.push({ minQty, prix_ht, prix_ttc, discountPct });
+  }
+
+  if (tiers.length === 0) return undefined;
+  // Sort ascending by minQty so callers can walk them in order
+  tiers.sort((a, b) => a.minQty - b.minQty);
+  return tiers;
+}
+
+/**
+ * Given a list of tiers and a quantity, returns the best applicable tier.
+ * Falls back to the first tier when quantity is below all thresholds.
+ */
+export function bestTierForQty(tiers: PriceTier[], qty: number): PriceTier {
+  let best = tiers[0];
+  for (const tier of tiers) {
+    if (qty >= tier.minQty) best = tier;
+  }
+  return best;
 }
 
 // ── JSON-LD extraction ────────────────────────────────────────────────────────
@@ -114,6 +198,7 @@ export function extractProductFromHtml(html: string, url: string): ExtractedProd
 
   const categorie = extractCategoryFromHtml(html);
   const ean = product.offers?.gtin13 ?? null;
+  const tiers = extractTiersFromHtml(html);
 
   return {
     id: sku,
@@ -122,6 +207,7 @@ export function extractProductFromHtml(html: string, url: string): ExtractedProd
     categorie,
     reference: slugFromUrl(url),
     ean,
+    ...(tiers ? { tiers } : {}),
   };
 }
 

@@ -20,6 +20,8 @@ export {
   findProductInHtml,
   extractCategoryFromHtml,
   extractProductFromHtml,
+  extractTiersFromHtml,
+  bestTierForQty,
 } from '@/services/extractProduct';
 
 import { extractProductFromHtml } from '@/services/extractProduct';

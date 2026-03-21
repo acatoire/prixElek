@@ -419,6 +419,50 @@ describe('MaterielElectriqueAdapter', () => {
       expect(err.retryable).toBe(false);
     });
   });
+
+  describe('parseHtml — tiered pricing', () => {
+    function makeTieredHtml(basePrice: number): string {
+      const product = JSON.stringify({
+        '@type': 'Product',
+        sku: REF,
+        offers: { '@type': 'Offer', price: basePrice, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+      });
+      return `<html>
+        <script type="application/ld+json">${product}</script>
+        <body>
+          <div id="decreasing-prices">
+            <table role="presentation">
+              <thead><tr><td>Quantité</td><td>Prix unitaire</td><td>Vous gagnez</td></tr></thead>
+              <tbody>
+                <tr>
+                  <td>1+</td>
+                  <td><span class="ex-vat">1,2083€</span><span class="inc-vat">1,45€</span></td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>20+</td>
+                  <td><span class="ex-vat">1,1333€</span><span class="inc-vat">1,36€</span></td>
+                  <td>6 %</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </body>
+      </html>`;
+    }
+
+    it('includes tiers in the returned SupplierPrice when #decreasing-prices table is present', () => {
+      const result = adapter.parseHtml(makeTieredHtml(1.45), REF);
+      expect(result.tiers).toHaveLength(2);
+      expect(result.tiers![0]).toMatchObject({ minQty: 1,  discountPct: 0 });
+      expect(result.tiers![1]).toMatchObject({ minQty: 20, discountPct: 6, prix_ttc: 1.36 });
+    });
+
+    it('returns empty tiers array when no #decreasing-prices section exists', () => {
+      const result = adapter.parseHtml(makeHtml(), REF);
+      expect(result.tiers).toEqual([]);
+    });
+  });
 });
 
 

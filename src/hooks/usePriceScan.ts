@@ -19,9 +19,15 @@ import type { PriceCell, PriceMatrix } from '@/types/price';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-/** Returns true when the cell has a price fetched less than 24 h ago */
-function isFresh(cell: PriceCell | undefined): boolean {
+/**
+ * Returns true when the cell has a fresh price fetched less than 24 h ago.
+ * A materielelectrique cell where tiers===undefined was fetched before the
+ * tiered-pricing feature existed — treat it as stale so it gets re-fetched
+ * and the discount schedule is picked up.
+ */
+function isFresh(cell: PriceCell | undefined, supplierId?: string): boolean {
   if (cell?.status !== 'success' || !cell.data?.fetchedAt) return false;
+  if (supplierId === 'materielelectrique' && cell.data.tiers === undefined) return false;
   return Date.now() - new Date(cell.data.fetchedAt).getTime() < CACHE_TTL_MS;
 }
 
@@ -97,7 +103,7 @@ export function usePriceScan(): UsePriceScanReturn {
         for (const m of targets) {
           next[m.id] = { ...next[m.id] };
           for (const s of SUPPLIERS) {
-            if (!isFresh(snapshot[m.id]?.[s.id])) {
+            if (!isFresh(snapshot[m.id]?.[s.id], s.id)) {
               next[m.id][s.id] = { status: 'loading', data: null, errorMessage: null };
             }
           }
@@ -131,7 +137,7 @@ export function usePriceScan(): UsePriceScanReturn {
         // Run all suppliers concurrently for this material
         const tasks = SUPPLIERS.map(async (s) => {
           // Use the pre-scan snapshot to decide freshness — avoids races
-          if (isFresh(snapshot[material.id]?.[s.id])) return;
+          if (isFresh(snapshot[material.id]?.[s.id], s.id)) return;
 
           const ref = material.references_fournisseurs[s.id];
           if (!ref) {

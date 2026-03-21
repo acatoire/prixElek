@@ -15,6 +15,7 @@ import type {PriceMatrix} from '@/types/price';
 import type {UseCommandeReturn} from '@/hooks/useCommande';
 import {SUPPLIERS} from '@/config/suppliers';
 import {calcCablePurchase, compareCableSuppliers} from '@/services/CableCalculator';
+import {bestTierForQty} from '@/services/extractProduct';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -163,17 +164,20 @@ export function CommandeTab({
     SUPPLIERS.map((s) => {
       const total = selectedMaterials.reduce((acc, m) => {
         const cell = prices[m.id]?.[s.id];
-        const price = cell?.status === 'success' ? (cell.data?.prix_ht ?? null) : null;
-        if (price === null) return acc;
+        const basePrice = cell?.status === 'success' ? (cell.data?.prix_ht ?? null) : null;
+        if (basePrice === null) return acc;
         if (isCableMaterial(m)) {
           const packaging = m.cable!.packaging[s.id];
           if (!packaging) return acc;
           const qty = Math.max(1, quantities[m.id] ?? 1);
-          const { totalPrice } = calcCablePurchase({ neededMetres: qty, packaging, unitPrice: price });
+          const { totalPrice } = calcCablePurchase({ neededMetres: qty, packaging, unitPrice: basePrice });
           return totalPrice !== null ? acc + totalPrice : acc;
         }
         const qty = quantities[m.id] ?? 1;
-        return acc + price * qty;
+        // Apply best tier for this quantity if tiers exist and are non-empty
+        const tiers = cell?.data?.tiers;
+        const unitPrice = (tiers && tiers.length > 0) ? bestTierForQty(tiers, qty).prix_ht : basePrice;
+        return acc + unitPrice * qty;
       }, 0);
       const hasAllPrices = selectedMaterials.every(
         (m) => prices[m.id]?.[s.id]?.status === 'success'
@@ -501,11 +505,15 @@ export function CommandeTab({
 
                   // ── Regular (non-cable) row ────────────────────────────────
 
-                  // Compute per-row price comparison
+                  // Compute per-row price comparison using tier-aware unit prices
                   const rowPrices = new Map<string, number>();
                   for (const s of SUPPLIERS) {
-                    const p = prices[material.id]?.[s.id]?.data?.prix_ht;
-                    if (p !== null && p !== undefined) rowPrices.set(s.id, p * qty);
+                    const cell = prices[material.id]?.[s.id];
+                    const baseP = cell?.data?.prix_ht;
+                    if (baseP === null || baseP === undefined) continue;
+                    const tiers = cell?.data?.tiers;
+                    const unitP = (tiers && tiers.length > 0) ? bestTierForQty(tiers, qty).prix_ht : baseP;
+                    rowPrices.set(s.id, unitP * qty);
                   }
                   const rowComparison = computeComparison(rowPrices);
                   return (
@@ -547,11 +555,7 @@ export function CommandeTab({
                           );
                         }
                         if (!cell || cell.status === 'idle') {
-                          return (
-                            <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
-                              —
-                            </td>
-                          );
+                          return <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">—</td>;
                         }
                         if (cell.status === 'loading') {
                           return (
@@ -567,13 +571,15 @@ export function CommandeTab({
                             </td>
                           );
                         }
-                        const unitPrice = cell.data?.prix_ht ?? null;
+                        const basePrice = cell.data?.prix_ht ?? null;
+                        const tiers = cell.data?.tiers;
+                        const activeTier = (tiers && tiers.length > 0) ? bestTierForQty(tiers, qty) : null;
+                        const unitPrice = activeTier ? activeTier.prix_ht : basePrice;
                         const lineTotal = unitPrice !== null ? unitPrice * qty : null;
                         const cmp = rowComparison.get(s.id);
                         return (
                           <td key={s.id} className="px-5 py-3 text-right">
-                            <div
-                              className={`font-semibold tabular-nums ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}>
+                            <div className={`font-semibold tabular-nums ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}>
                               {lineTotal !== null ? fmt(lineTotal) : '—'}
                             </div>
                             {cmp?.diffFromBest !== undefined && (
@@ -583,6 +589,9 @@ export function CommandeTab({
                             )}
                             <div className="text-xs text-gray-400 tabular-nums">
                               {unitPrice !== null ? `${fmt(unitPrice)} × ${qty}` : ''}
+                              {activeTier && activeTier.discountPct > 0 && (
+                                <span className="ml-1 text-orange-500">🧮 -{activeTier.discountPct}%</span>
+                              )}
                             </div>
                           </td>
                         );

@@ -55,6 +55,7 @@ const MOCK_PRICE: SupplierPrice = {
   stock: 1,
   unite: 'pièce',
   fetchedAt: new Date().toISOString(), // fresh — now
+  tiers: [],  // [] = fetched with tier-aware code, product has no tiers
 };
 
 

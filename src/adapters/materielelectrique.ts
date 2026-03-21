@@ -22,6 +22,7 @@ import axios from 'axios';
 import {SupplierAdapter} from './base';
 import {FetchError} from '@/types/error';
 import type {SupplierPrice} from '@/types/price';
+import { extractTiersFromHtml } from '@/services/extractProduct';
 
 const BASE_URL = 'https://www.materielelectrique.com';
 
@@ -239,7 +240,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
 
       const product = this.findMatchingProduct(parsed, normalizedRef);
       if (product) {
-        return this.extractPrice(product);
+        return this.extractPrice(product, html);
       }
     }
 
@@ -288,7 +289,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
   }
 
   /** Extract a SupplierPrice from a confirmed schema.org/Product node */
-  private extractPrice(product: SchemaProduct): SupplierPrice {
+  private extractPrice(product: SchemaProduct, html: string): SupplierPrice {
     const offer = product.offers;
     if (!offer) {
       throw new FetchError({
@@ -316,12 +317,15 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
     const availability = AVAILABILITY_MAP[availabilityIri] ?? 'Unknown';
     const inStock = availability === 'InStock' || availability === 'LimitedAvailability';
 
+    const tiers = extractTiersFromHtml(html);
+
     return {
       prix_ht,
       prix_ttc: priceTtc,
       stock: inStock ? 1 : 0,
       unite: 'pièce',
       fetchedAt: new Date().toISOString(),
+      tiers: tiers ?? [],   // [] = "no tiers" (checked); undefined = "not yet fetched"
     };
   }
 }

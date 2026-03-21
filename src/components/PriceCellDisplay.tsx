@@ -4,9 +4,11 @@
  * Renders a single price cell in the comparison table.
  * Handles: idle, loading, success, error states.
  * For cable materials (isCableMaterial), shows the per-lot price + lot size.
+ * For tiered pricing, shows a 🧮 icon with a hover tooltip.
  */
 import React from 'react';
 import type { PriceCell } from '@/types/price';
+import type { PriceTier } from '@/types/price';
 import type { Material } from '@/types/material';
 import { isCableMaterial } from '@/types/material';
 
@@ -20,6 +22,12 @@ interface PriceCellDisplayProps {
   material?: Material;
   /** Supplier id — needed to look up cable packaging */
   supplierId?: string;
+  /**
+   * Ordered quantity for this material — used in Commande tab to pick the
+   * best tier automatically. When undefined (Catalogue tab), no tier is
+   * highlighted but the tooltip still shows the full schedule.
+   */
+  quantity?: number;
 }
 
 /** Formats a euro price: 18.64 → "18,64 €" */
@@ -32,7 +40,40 @@ function formatDiff(value: number): string {
   return '+' + value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 }
 
-export function PriceCellDisplay({ cell, isBest, diffFromBest, material, supplierId }: PriceCellDisplayProps): React.ReactElement {
+/** Tooltip content listing all tiers, optionally highlighting the active one */
+function TierTooltip({ tiers, quantity }: { tiers: PriceTier[]; quantity?: number }): React.ReactElement {
+  return (
+    <div className="text-left min-w-[180px]">
+      <p className="font-semibold text-xs mb-1 text-orange-300">Prix dégressif</p>
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="text-gray-400">
+            <th className="text-left pr-2 pb-0.5 font-normal">Qté</th>
+            <th className="text-right pr-2 pb-0.5 font-normal">HT/u</th>
+            <th className="text-right pb-0.5 font-normal">Remise</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tiers.map((tier) => {
+            const isActive = quantity !== undefined && quantity >= tier.minQty &&
+              tiers.filter(t => quantity >= t.minQty).at(-1)?.minQty === tier.minQty;
+            return (
+              <tr key={tier.minQty} className={isActive ? 'text-green-300 font-semibold' : 'text-gray-200'}>
+                <td className="pr-2 py-0.5">{tier.minQty}+</td>
+                <td className="pr-2 py-0.5 text-right tabular-nums">{formatPrice(tier.prix_ht)}</td>
+                <td className="py-0.5 text-right tabular-nums">
+                  {tier.discountPct > 0 ? `-${tier.discountPct} %` : '—'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function PriceCellDisplay({ cell, isBest, diffFromBest, material, supplierId, quantity }: PriceCellDisplayProps): React.ReactElement {
   if (!cell || cell.status === 'idle') {
     return <span className="text-gray-300 select-none">—</span>;
   }
@@ -48,17 +89,11 @@ export function PriceCellDisplay({ cell, isBest, diffFromBest, material, supplie
 
   if (cell.status === 'error') {
     const msg = cell.errorMessage ?? 'Indisponible';
-    // Shorten long technical messages for display
     const shortMsg = msg.length > 60 ? msg.slice(0, 57) + '…' : msg;
     return (
-      <span
-        className="flex flex-col items-end gap-0.5"
-        title={msg}
-      >
+      <span className="flex flex-col items-end gap-0.5" title={msg}>
         <span className="text-red-500 text-xs font-medium">⚠ Erreur</span>
-        <span className="text-red-400 text-xs leading-tight max-w-[180px] text-right">
-          {shortMsg}
-        </span>
+        <span className="text-red-400 text-xs leading-tight max-w-[180px] text-right">{shortMsg}</span>
       </span>
     );
   }
@@ -71,7 +106,6 @@ export function PriceCellDisplay({ cell, isBest, diffFromBest, material, supplie
 
   const inStock = (cell.data?.stock ?? 0) > 0;
 
-  // Show cache age when price is older than 1 minute (i.e. served from cache)
   const fetchedAt = cell.data?.fetchedAt;
   const ageMs = fetchedAt ? Date.now() - new Date(fetchedAt).getTime() : 0;
   const isCached = ageMs > 60_000;
@@ -91,8 +125,8 @@ export function PriceCellDisplay({ cell, isBest, diffFromBest, material, supplie
       const lotMetres = packaging.lot_metres;
       const lotPrice =
         packaging.prix_base === 'metre'
-          ? Math.round(price * lotMetres * 100) / 100   // HT/m × lot size
-          : price;                                       // already per lot
+          ? Math.round(price * lotMetres * 100) / 100
+          : price;
       const pricePerMetre =
         packaging.prix_base === 'metre'
           ? price
@@ -101,21 +135,43 @@ export function PriceCellDisplay({ cell, isBest, diffFromBest, material, supplie
     }
   }
 
-  // The "headline" price shown large:
-  //   - cable with lot packaging → lot price (what you actually pay for 1 reel)
-  //   - everything else          → unit HT price as-is
   const displayPrice = lotInfo ? lotInfo.lotPrice : price;
+
+  // ── Tiered pricing ─────────────────────────────────────────────────────────
+  const tiers = cell.data?.tiers;
+
+  // When a quantity is known, use the best applicable tier price
+  let effectivePrice = displayPrice;
+  if (tiers && quantity !== undefined && quantity > 0 && !lotInfo) {
+    const best = tiers.filter(t => quantity >= t.minQty).at(-1);
+    if (best) effectivePrice = best.prix_ht;
+  }
 
   return (
     <span className="flex flex-col items-end gap-0.5">
-      {/* Main price + diff */}
-      <span className="inline-flex items-baseline gap-1.5">
+      {/* Main price + diff + tier icon */}
+      <span className="inline-flex items-center gap-1.5">
         <span className={`font-semibold tabular-nums ${isBest ? 'text-green-600' : 'text-gray-900'}`}>
-          {formatPrice(displayPrice)}
+          {formatPrice(effectivePrice)}
         </span>
         {diffFromBest !== undefined && diffFromBest > 0 && (
           <span className="text-xs tabular-nums text-red-300 font-medium">
             {formatDiff(diffFromBest)}
+          </span>
+        )}
+        {tiers && tiers.length > 1 && (
+          <span className="relative group cursor-default select-none">
+            <span className="text-orange-400 text-xs leading-none">🧮</span>
+            {/* Tooltip */}
+            <span className="
+              pointer-events-none absolute z-50 right-0 bottom-full mb-1.5
+              bg-gray-900 text-white rounded-lg shadow-xl px-3 py-2
+              opacity-0 group-hover:opacity-100
+              transition-opacity duration-150
+              whitespace-nowrap
+            ">
+              <TierTooltip tiers={tiers} quantity={quantity} />
+            </span>
           </span>
         )}
       </span>
