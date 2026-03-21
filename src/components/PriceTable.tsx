@@ -153,6 +153,7 @@ export function PriceTable({
                     style={{ borderTop: `3px solid ${s.color}` }}
                   >
                     {s.label}
+                    <span className="ml-1 text-xs font-normal text-gray-400">HT</span>
                   </th>
                 ))}
                 {/* Edit column */}

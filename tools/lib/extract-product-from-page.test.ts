@@ -128,20 +128,20 @@ describe('extractCategoryFromHtml', () => {
 describe('extractProductFromHtml', () => {
   it('returns a complete ExtractedProduct from a valid page', () => {
     const result = extractProductFromHtml(makeHtml(), PRODUCT_URL);
-    expect(result.id).toBe(
-      'prise-de-courant-legrand-celiane-4x2p-t-compacte-precablee-standard-francais-p-297691'
-    );
+    expect(result.id).toBe('LEG067128');
     expect(result.nom).toBe('Prise Céliane 4x2P+T');
     expect(result.marque).toBe('Legrand');
-    expect(result.reference).toBe('LEG067128');
+    expect(result.reference).toBe(
+      'prise-de-courant-legrand-celiane-4x2p-t-compacte-precablee-standard-francais-p-297691'
+    );
     expect(result.ean).toBe('3245060671280');
     expect(result.categorie).toBe('Prise de Courant, Prise Usb');
   });
 
-  it('uses mpn as reference when sku is absent', () => {
+  it('uses mpn as id when sku is absent', () => {
     const html = makeHtml({ sku: undefined as unknown as string, mpn: '067128' });
     const result = extractProductFromHtml(html, PRODUCT_URL);
-    expect(result.reference).toBe('067128');
+    expect(result.id).toBe('067128');
   });
 
   it('handles brand as a plain string', () => {
@@ -202,7 +202,10 @@ describe('extractProductFromUrl', () => {
       requestTimeoutMs: 5_000,
     });
     expect(result.nom).toBe('Prise Céliane 4x2P+T');
-    expect(result.reference).toBe('LEG067128');
+    expect(result.id).toBe('LEG067128');
+    expect(result.reference).toBe(
+      'prise-de-courant-legrand-celiane-4x2p-t-compacte-precablee-standard-francais-p-297691'
+    );
   });
 
   it('propagates network errors', async () => {

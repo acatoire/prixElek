@@ -11,9 +11,14 @@ interface PriceCellDisplayProps {
   cell: PriceCell | undefined;
 }
 
-/** Formats a euro price: 18.64 → "18,64 €" */
+/** Formats a euro price HT: 18.64 → "18,64 € HT" */
 function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) + ' HT';
+}
+
+/** Formats a euro price TTC: 18.64 → "18,64 € TTC" */
+function formatPriceTtc(value: number): string {
+  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) + ' TTC';
 }
 
 export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactElement {
@@ -54,6 +59,7 @@ export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactEl
   }
 
   const inStock = (cell.data?.stock ?? 0) > 0;
+  const priceTtc = cell.data?.prix_ttc;
 
   // Show cache age when price is older than 1 minute (i.e. served from cache)
   const fetchedAt = cell.data?.fetchedAt;
@@ -70,6 +76,11 @@ export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactEl
   return (
     <span className="flex flex-col items-end gap-0.5">
       <span className="font-semibold text-gray-900 tabular-nums">{formatPrice(price)}</span>
+      {priceTtc !== undefined && (
+        <span className="text-xs text-gray-400 tabular-nums">
+          ({formatPriceTtc(priceTtc)})
+        </span>
+      )}
       <span className={`text-xs ${inStock ? 'text-green-600' : 'text-orange-500'}`}>
         {inStock ? 'En stock' : 'Sur commande'}
       </span>
@@ -81,4 +92,3 @@ export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactEl
     </span>
   );
 }
-

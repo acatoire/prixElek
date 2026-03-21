@@ -8,6 +8,12 @@
 export interface SupplierPrice {
   /** Price excluding tax (HT), in euros */
   prix_ht: number | null;
+  /**
+   * Raw price as published by the supplier, before any VAT conversion.
+   * Set only when the supplier publishes TTC prices (e.g. materielelectrique.com).
+   * Undefined for suppliers that already publish HT prices (e.g. Rexel).
+   */
+  prix_ttc?: number;
   /** Available stock quantity, null if not provided by the supplier */
   stock: number | null;
   /** Sales unit label, e.g. 'pièce', 'lot de 10' */

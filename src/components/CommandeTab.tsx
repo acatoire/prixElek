@@ -17,7 +17,7 @@ import { SUPPLIERS } from '@/config/suppliers';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(value: number): string {
-  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) + ' HT';
 }
 
 function buildEmailBody(
@@ -184,6 +184,7 @@ export function CommandeTab({ materials, prices, commande }: CommandeTabProps): 
                   style={{ borderTop: `3px solid ${s.color}` }}
                 >
                   {s.label}
+                  <span className="ml-1 text-xs font-normal text-gray-400">HT</span>
                 </th>
               ))}
               <th className="px-3 py-3 w-10" />

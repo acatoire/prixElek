@@ -39,6 +39,16 @@ function getBaseUrl(): string {
   return BASE_URL;
 }
 
+// ── Tax rate ──────────────────────────────────────────────────────────────────
+
+/**
+ * materielelectrique.com publishes prices TTC (taxes included).
+ * We convert to HT (excluding VAT) before storing, so that all supplier prices
+ * are comparable on the same basis (Rexel returns HT prices natively).
+ * Standard French VAT rate for electrical equipment: 20 %.
+ */
+export const MATERIELELECTRIQUE_VAT_RATE = 0.2;
+
 // ── Scraping config ───────────────────────────────────────────────────────────
 
 export interface ScrapingConfig {
@@ -277,8 +287,8 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
       });
     }
 
-    const price = typeof offer.price === 'number' ? offer.price : null;
-    if (price === null) {
+    const priceTtc = typeof offer.price === 'number' ? offer.price : null;
+    if (priceTtc === null) {
       throw new FetchError({
         code: 'PARSE_ERROR',
         supplierId: this.supplierId,
@@ -287,12 +297,16 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
       });
     }
 
+    // materielelectrique.com prices are TTC — convert to HT for comparison with Rexel
+    const prix_ht = Math.round((priceTtc / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100;
+
     const availabilityIri = offer.availability ?? '';
     const availability = AVAILABILITY_MAP[availabilityIri] ?? 'Unknown';
     const inStock = availability === 'InStock' || availability === 'LimitedAvailability';
 
     return {
-      prix_ht: price,
+      prix_ht,
+      prix_ttc: priceTtc,
       stock: inStock ? 1 : 0,
       unite: 'pièce',
       fetchedAt: new Date().toISOString(),
