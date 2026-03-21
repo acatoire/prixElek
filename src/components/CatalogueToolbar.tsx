@@ -3,9 +3,9 @@
  *
  * Toolbar row with: import ZIP/JSON, export ZIP, add from URL buttons.
  */
-import React, { useRef, useCallback } from 'react';
-import type { Catalog } from '@/types/material';
-import { importCatalogueFromZip, importCatalogueFromJson } from '@/services/catalogueZip';
+import React, {useRef, useCallback} from 'react';
+import type {Catalog} from '@/types/material';
+import {importCatalogueFromZip, importCatalogueFromJson} from '@/services/catalogueZip';
 
 interface CatalogueToolbarProps {
   onImport: (items: Catalog) => void;
@@ -14,10 +14,10 @@ interface CatalogueToolbarProps {
 }
 
 export function CatalogueToolbar({
-  onImport,
-  onExport,
-  onAddFromUrl,
-}: CatalogueToolbarProps): React.ReactElement {
+                                   onImport,
+                                   onExport,
+                                   onAddFromUrl,
+                                 }: CatalogueToolbarProps): React.ReactElement {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback(
@@ -61,8 +61,7 @@ export function CatalogueToolbar({
           bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
           focus:outline-none focus:ring-2 focus:ring-gray-400"
         title="Importer un catalogue (.zip ou .json)"
-      >
-        📥 Importer
+      > 📂
       </button>
 
       <button
@@ -71,8 +70,7 @@ export function CatalogueToolbar({
           bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
           focus:outline-none focus:ring-2 focus:ring-gray-400"
         title="Exporter le catalogue en ZIP (un fichier JSON par catégorie)"
-      >
-        📤 Exporter (.zip)
+      > 💾
       </button>
 
       <button
@@ -81,8 +79,7 @@ export function CatalogueToolbar({
           bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 transition-colors
           focus:outline-none focus:ring-2 focus:ring-orange-400"
         title="Ajouter un article depuis une URL materielelectrique.com"
-      >
-        ➕ Ajouter depuis URL
+      > ➕
       </button>
     </div>
   );

@@ -54,7 +54,7 @@ const DEFAULT_SELECT_PROPS = {
 };
 
 describe('PriceTable', () => {
-  it('renders material name and brand', () => {
+  it('renders material name and brand below it', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
@@ -66,16 +66,15 @@ describe('PriceTable', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
-    expect(screen.getByText(/Actualiser les prix/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Actualiser les prix' })).toBeInTheDocument();
   });
 
   it('shows scanning state and disables button during scan', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={true} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
-    const scanBtn = screen.getByText(/Scan en cours/).closest('button') as HTMLButtonElement;
-    expect(scanBtn).toBeDisabled();
-    expect(screen.getByText(/Arrêter/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scan en cours' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Arrêter le scan' })).toBeInTheDocument();
   });
 
   it('calls onScan when button is clicked', () => {
@@ -83,7 +82,7 @@ describe('PriceTable', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={onScan} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
-    fireEvent.click(screen.getByText(/Actualiser les prix/).closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: 'Actualiser les prix' }));
     expect(onScan).toHaveBeenCalledOnce();
   });
 
@@ -92,7 +91,7 @@ describe('PriceTable', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={true} onScan={vi.fn()} onStop={onStop} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
-    fireEvent.click(screen.getByText(/Arrêter/).closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: 'Arrêter le scan' }));
     expect(onStop).toHaveBeenCalledOnce();
   });
 

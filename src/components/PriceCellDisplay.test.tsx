@@ -56,6 +56,22 @@ describe('PriceCellDisplay', () => {
     expect(screen.getByText('En stock')).toBeInTheDocument();
   });
 
+  it('highlights price in green when isBest is true', () => {
+    render(<PriceCellDisplay cell={SUCCESS_CELL} isBest={true} />);
+    const priceEl = screen.getByText(/18/);
+    expect(priceEl.className).toMatch(/text-green-600/);
+  });
+
+  it('shows diff inline when diffFromBest is provided', () => {
+    render(<PriceCellDisplay cell={SUCCESS_CELL} diffFromBest={1.30} />);
+    expect(screen.getByText(/\+.*1/)).toBeInTheDocument();
+  });
+
+  it('does not show diff when diffFromBest is 0', () => {
+    render(<PriceCellDisplay cell={SUCCESS_CELL} diffFromBest={0} />);
+    expect(screen.queryByText(/\+/)).not.toBeInTheDocument();
+  });
+
   it('renders Sur commande when stock is 0', () => {
     render(<PriceCellDisplay cell={OUT_OF_STOCK_CELL} />);
     expect(screen.getByText('Sur commande')).toBeInTheDocument();
@@ -66,4 +82,3 @@ describe('PriceCellDisplay', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 });
-

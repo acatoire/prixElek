@@ -9,19 +9,23 @@ import type { PriceCell } from '@/types/price';
 
 interface PriceCellDisplayProps {
   cell: PriceCell | undefined;
+  /** True when this cell has the lowest price among all suppliers for this row */
+  isBest?: boolean;
+  /** Difference vs the best price (positive = more expensive). Undefined when this cell IS the best or only one price available. */
+  diffFromBest?: number;
 }
 
-/** Formats a euro price HT: 18.64 → "18,64 € HT" */
+/** Formats a euro price: 18.64 → "18,64 €" */
 function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) + ' HT';
+  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 }
 
-/** Formats a euro price TTC: 18.64 → "18,64 € TTC" */
-function formatPriceTtc(value: number): string {
-  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) + ' TTC';
+/** Formats a positive diff: 1.3 → "+1,30 €" */
+function formatDiff(value: number): string {
+  return '+' + value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 }
 
-export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactElement {
+export function PriceCellDisplay({ cell, isBest, diffFromBest }: PriceCellDisplayProps): React.ReactElement {
   if (!cell || cell.status === 'idle') {
     return <span className="text-gray-300 select-none">—</span>;
   }
@@ -59,7 +63,6 @@ export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactEl
   }
 
   const inStock = (cell.data?.stock ?? 0) > 0;
-  const priceTtc = cell.data?.prix_ttc;
 
   // Show cache age when price is older than 1 minute (i.e. served from cache)
   const fetchedAt = cell.data?.fetchedAt;
@@ -75,12 +78,17 @@ export function PriceCellDisplay({ cell }: PriceCellDisplayProps): React.ReactEl
 
   return (
     <span className="flex flex-col items-end gap-0.5">
-      <span className="font-semibold text-gray-900 tabular-nums">{formatPrice(price)}</span>
-      {priceTtc !== undefined && (
-        <span className="text-xs text-gray-400 tabular-nums">
-          ({formatPriceTtc(priceTtc)})
+      {/* Price + diff on the same line */}
+      <span className="inline-flex items-baseline gap-1.5">
+        <span className={`font-semibold tabular-nums ${isBest ? 'text-green-600' : 'text-gray-900'}`}>
+          {formatPrice(price)}
         </span>
-      )}
+        {diffFromBest !== undefined && diffFromBest > 0 && (
+          <span className="text-xs tabular-nums text-red-300 font-medium">
+            {formatDiff(diffFromBest)}
+          </span>
+        )}
+      </span>
       <span className={`text-xs ${inStock ? 'text-green-600' : 'text-orange-500'}`}>
         {inStock ? 'En stock' : 'Sur commande'}
       </span>

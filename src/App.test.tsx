@@ -46,14 +46,18 @@ describe('App', () => {
 
   it('renders the scan button', () => {
     render(<App />);
-    expect(screen.getByText(/Actualiser les prix/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Actualiser les prix' })).toBeInTheDocument();
   });
 
   it('clicking the scan button triggers a scan', async () => {
     render(<App />);
     await act(async () => {
-      fireEvent.click(screen.getByText(/Actualiser les prix/).closest('button')!);
+      fireEvent.click(screen.getByRole('button', { name: 'Actualiser les prix' }));
     });
-    expect(screen.getByText(/Actualiser les prix|Scan en cours/)).toBeInTheDocument();
+    // after click the button is either still present or replaced by "Scan en cours"
+    expect(
+      screen.queryByRole('button', { name: 'Actualiser les prix' }) ??
+      screen.queryByRole('button', { name: 'Scan en cours' })
+    ).toBeTruthy();
   });
 });

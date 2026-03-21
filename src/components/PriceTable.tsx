@@ -11,6 +11,31 @@ import type { PriceMatrix } from '@/types/price';
 import { PriceCellDisplay } from './PriceCellDisplay';
 import { SUPPLIERS } from '@/config/suppliers';
 
+/**
+ * For a given material row, returns a map of supplierId → { isBest, diffFromBest }.
+ * Only considers suppliers with a successful price. Returns an empty map when
+ * fewer than 2 prices are available (no comparison possible).
+ */
+function computeRowComparison(
+  materialId: string,
+  prices: PriceMatrix
+): Map<string, { isBest: boolean; diffFromBest: number | undefined }> {
+  const result = new Map<string, { isBest: boolean; diffFromBest: number | undefined }>();
+  const available = SUPPLIERS
+    .map((s) => ({ id: s.id, price: prices[materialId]?.[s.id]?.data?.prix_ht ?? null }))
+    .filter((s): s is { id: string; price: number } => s.price !== null);
+
+  if (available.length < 2) return result;
+
+  const best = Math.min(...available.map((s) => s.price));
+  for (const { id, price } of available) {
+    const isBest = price === best;
+    const diff = isBest ? undefined : Math.round((price - best) * 100) / 100;
+    result.set(id, { isBest, diffFromBest: diff });
+  }
+  return result;
+}
+
 interface PriceTableProps {
   materials: Material[];
   prices: PriceMatrix;
@@ -80,8 +105,8 @@ export function PriceTable({
   const someSelected = !allSelected && materials.some((m) => selectedIds.has(m.id));
   const selectedCount = materials.filter((m) => selectedIds.has(m.id)).length;
 
-  // Total number of columns (checkbox + nom + marque + suppliers + edit)  ← no categorie column
-  const colSpan = 3 + SUPPLIERS.length + 1;
+  // Total number of columns (checkbox + nom + suppliers + edit) — no marque column
+  const colSpan = 2 + SUPPLIERS.length + 1;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -129,17 +154,18 @@ export function PriceTable({
           {scanning && (
             <button
               onClick={onStop}
+              aria-label="Arrêter le scan"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
                 bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer
                 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
             >
               <span>⏹</span>
-              Arrêter
             </button>
           )}
           <button
             onClick={onScan}
             disabled={scanning}
+            aria-label={scanning ? 'Scan en cours' : selectedCount > 0 ? `Actualiser les prix (${selectedCount})` : 'Actualiser les prix'}
             className={[
               'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
               'transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400',
@@ -149,14 +175,11 @@ export function PriceTable({
             ].join(' ')}
           >
             {scanning ? (
-              <>
-                <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
-                Scan en cours…
-              </>
+              <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
             ) : selectedCount > 0 ? (
-              <><span>🔍</span> Actualiser les prix ({selectedCount})</>
+              <><span>🔍</span>{selectedCount}</>
             ) : (
-              <><span>🔍</span> Actualiser les prix</>
+              <span>🔍</span>
             )}
           </button>
         </div>
@@ -185,7 +208,6 @@ export function PriceTable({
                   />
                 </th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/2">Matériel</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Marque</th>
                 {SUPPLIERS.map((s) => (
                   <th
                     key={s.id}
@@ -193,7 +215,6 @@ export function PriceTable({
                     style={{ borderTop: `3px solid ${s.color}` }}
                   >
                     {s.label}
-                    <span className="ml-1 text-xs font-normal text-gray-400">HT</span>
                   </th>
                 ))}
                 {/* Edit column */}
@@ -250,6 +271,7 @@ export function PriceTable({
                     {/* ── Material rows ── */}
                     {!isCollapsed && items.map((material, idx) => {
                       const isSelected = selectedIds.has(material.id);
+                      const comparison = computeRowComparison(material.id, prices);
                       return (
                         <tr
                           key={material.id}
@@ -268,11 +290,17 @@ export function PriceTable({
                               aria-label={`Sélectionner ${material.nom}`}
                             />
                           </td>
-                          <td className="px-5 py-3.5 font-medium text-gray-800">{material.nom}</td>
-                          <td className="px-4 py-3.5 text-gray-500">{material.marque}</td>
+                          <td className="px-5 py-3.5">
+                            <div className="font-medium text-gray-800">{material.nom}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{material.marque}</div>
+                          </td>
                           {SUPPLIERS.map((s) => (
                             <td key={s.id} className="px-5 py-3.5 text-right">
-                              <PriceCellDisplay cell={prices[material.id]?.[s.id]} />
+                              <PriceCellDisplay
+                                cell={prices[material.id]?.[s.id]}
+                                isBest={comparison.get(s.id)?.isBest}
+                                diffFromBest={comparison.get(s.id)?.diffFromBest}
+                              />
                             </td>
                           ))}
                           <td className="px-3 py-3.5 text-right">

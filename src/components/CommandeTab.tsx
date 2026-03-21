@@ -8,16 +8,38 @@
  * - Export-as-email button per supplier column
  * - Save order / load order buttons
  */
-import React, { useRef, useCallback, useState, useMemo } from 'react';
-import type { Material } from '@/types/material';
-import type { PriceMatrix } from '@/types/price';
-import type { UseCommandeReturn } from '@/hooks/useCommande';
-import { SUPPLIERS } from '@/config/suppliers';
+import React, {useRef, useCallback, useState, useMemo} from 'react';
+import type {Material} from '@/types/material';
+import type {PriceMatrix} from '@/types/price';
+import type {UseCommandeReturn} from '@/hooks/useCommande';
+import {SUPPLIERS} from '@/config/suppliers';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(value: number): string {
-  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) + ' HT';
+  return value.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'});
+}
+
+/** Formats a positive diff for totals: 3.5 → "+3,50 €" */
+function fmtDiff(value: number): string {
+  return '+' + value.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'});
+}
+
+/**
+ * Given a map of supplierId → price, returns comparison info per supplier.
+ * Returns empty map when fewer than 2 prices are available.
+ */
+function computeComparison(
+  supplierPrices: Map<string, number>
+): Map<string, { isBest: boolean; diffFromBest: number | undefined }> {
+  const result = new Map<string, { isBest: boolean; diffFromBest: number | undefined }>();
+  if (supplierPrices.size < 2) return result;
+  const best = Math.min(...supplierPrices.values());
+  for (const [id, price] of supplierPrices) {
+    const isBest = price === best;
+    result.set(id, {isBest, diffFromBest: isBest ? undefined : Math.round((price - best) * 100) / 100});
+  }
+  return result;
 }
 
 function buildEmailBody(
@@ -62,8 +84,15 @@ interface CommandeTabProps {
   onStop: () => void;
 }
 
-export function CommandeTab({ materials, prices, commande, scanning, onScan, onStop }: CommandeTabProps): React.ReactElement {
-  const { selectedIds, quantities, setQuantity, removeItem, exportOrder, importOrder } = commande;
+export function CommandeTab({
+                              materials,
+                              prices,
+                              commande,
+                              scanning,
+                              onScan,
+                              onStop
+                            }: CommandeTabProps): React.ReactElement {
+  const {selectedIds, quantities, setQuantity, removeItem, exportOrder, importOrder} = commande;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Set of collapsed category names (all expanded by default)
@@ -117,7 +146,7 @@ export function CommandeTab({ materials, prices, commande, scanning, onScan, onS
       const hasAllPrices = selectedMaterials.every(
         (m) => prices[m.id]?.[s.id]?.status === 'success'
       );
-      return [s.id, { total, hasAllPrices }];
+      return [s.id, {total, hasAllPrices}];
     })
   );
 
@@ -130,7 +159,7 @@ export function CommandeTab({ materials, prices, commande, scanning, onScan, onS
         prix_ht: prices[m.id]?.[supplierId]?.data?.prix_ht ?? null,
       }));
       const body = buildEmailBody(supplierId, supplierLabel, items);
-      const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
+      const blob = new Blob([body], {type: 'text/plain;charset=utf-8'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -176,8 +205,7 @@ export function CommandeTab({ materials, prices, commande, scanning, onScan, onS
           bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
           focus:outline-none focus:ring-2 focus:ring-gray-400"
         title="Charger une commande sauvegardée"
-      >
-        📂 Charger commande
+      > 📂
       </button>
     </>
   );
@@ -224,24 +252,24 @@ export function CommandeTab({ materials, prices, commande, scanning, onScan, onS
               bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
               focus:outline-none focus:ring-2 focus:ring-gray-400"
             title="Sauvegarder la commande pour la réimporter plus tard"
-          >
-            💾 Sauvegarder commande
+          > 💾
           </button>
           {/* Scan buttons */}
           {scanning && (
             <button
               onClick={onStop}
+              aria-label="Arrêter le scan"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
                 bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer
                 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
             >
               <span>⏹</span>
-              Arrêter
             </button>
           )}
           <button
             onClick={onScan}
             disabled={scanning}
+            aria-label={scanning ? 'Scan en cours' : 'Actualiser les prix'}
             className={[
               'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
               'transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400',
@@ -251,12 +279,9 @@ export function CommandeTab({ materials, prices, commande, scanning, onScan, onS
             ].join(' ')}
           >
             {scanning ? (
-              <>
-                <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
-                Scan en cours…
-              </>
+              <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
             ) : (
-              <><span>🔍</span> Actualiser les prix</>
+              <span>🔍</span>
             )}
           </button>
         </div>
@@ -266,159 +291,188 @@ export function CommandeTab({ materials, prices, commande, scanning, onScan, onS
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-5 py-3 font-medium text-gray-500">Matériel</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Quantité</th>
-              {SUPPLIERS.map((s) => (
-                <th
-                  key={s.id}
-                  className="text-right px-5 py-3 font-medium text-gray-500 min-w-[160px]"
-                  style={{ borderTop: `3px solid ${s.color}` }}
-                >
-                  {s.label}
-                  <span className="ml-1 text-xs font-normal text-gray-400">HT</span>
-                </th>
-              ))}
-              <th className="px-3 py-3 w-10" />
-            </tr>
+          <tr className="bg-gray-50 border-b border-gray-100">
+            <th className="text-left px-5 py-3 font-medium text-gray-500">Matériel</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Quantité</th>
+            {SUPPLIERS.map((s) => (
+              <th
+                key={s.id}
+                className="text-right px-5 py-3 font-medium text-gray-500 min-w-[160px]"
+                style={{borderTop: `3px solid ${s.color}`}}
+              >
+                {s.label}
+              </th>
+            ))}
+            <th className="px-3 py-3 w-10"/>
+          </tr>
           </thead>
           <tbody>
-            {Array.from(groups.entries()).map(([categorie, items]) => {
-              const isCollapsed = collapsedCategories.has(categorie);
-              return (
-                <React.Fragment key={categorie}>
-                  {/* ── Category header row ── */}
-                  <tr className="bg-gray-100 border-y border-gray-200">
-                    <td
-                      colSpan={colSpan}
-                      className="py-2 px-5 cursor-pointer select-none"
-                      onClick={() => toggleCategory(categorie)}
-                      aria-label={`${isCollapsed ? 'Déplier' : 'Replier'} la catégorie ${categorie}`}
-                    >
-                      <div className="flex items-center gap-2">
+          {Array.from(groups.entries()).map(([categorie, items]) => {
+            const isCollapsed = collapsedCategories.has(categorie);
+            return (
+              <React.Fragment key={categorie}>
+                {/* ── Category header row ── */}
+                <tr className="bg-gray-100 border-y border-gray-200">
+                  <td
+                    colSpan={colSpan}
+                    className="py-2 px-5 cursor-pointer select-none"
+                    onClick={() => toggleCategory(categorie)}
+                    aria-label={`${isCollapsed ? 'Déplier' : 'Replier'} la catégorie ${categorie}`}
+                  >
+                    <div className="flex items-center gap-2">
                         <span
                           className="text-xs text-gray-400 transition-transform duration-150"
-                          style={{ display: 'inline-block', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+                          style={{display: 'inline-block', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}}
                         >
                           ▾
                         </span>
-                        <span className="font-semibold text-gray-700 text-xs uppercase tracking-wide">
+                      <span className="font-semibold text-gray-700 text-xs uppercase tracking-wide">
                           {categorie}
                         </span>
-                        <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400">
                           {items.length} article{items.length > 1 ? 's' : ''}
                         </span>
-                      </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </td>
+                </tr>
 
-                  {/* ── Material rows (hidden when collapsed) ── */}
-                  {!isCollapsed && items.map((material, idx) => {
-                    const qty = quantities[material.id] ?? 1;
-                    return (
-                      <tr
-                        key={material.id}
-                        className={[
-                          'border-b border-gray-50 transition-colors',
-                          idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
-                        ].join(' ')}
-                      >
-                        {/* Material name */}
-                        <td className="px-5 py-3">
-                          <div className="font-medium text-gray-800">{material.nom}</div>
-                          <div className="text-xs text-gray-400">{material.marque}</div>
-                        </td>
+                {/* ── Material rows (hidden when collapsed) ── */}
+                {!isCollapsed && items.map((material, idx) => {
+                  const qty = quantities[material.id] ?? 1;
 
-                        {/* Quantity */}
-                        <td className="px-4 py-3">
-                          <input
-                            type="number"
-                            min={1}
-                            value={qty}
-                            onChange={(e) => setQuantity(material.id, parseInt(e.target.value, 10) || 1)}
-                            className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center
+                  // Compute per-row price comparison
+                  const rowPrices = new Map<string, number>();
+                  for (const s of SUPPLIERS) {
+                    const p = prices[material.id]?.[s.id]?.data?.prix_ht;
+                    if (p !== null && p !== undefined) rowPrices.set(s.id, p * qty);
+                  }
+                  const rowComparison = computeComparison(rowPrices);
+                  return (
+                    <tr
+                      key={material.id}
+                      className={[
+                        'border-b border-gray-50 transition-colors',
+                        idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
+                      ].join(' ')}
+                    >
+                      {/* Material name */}
+                      <td className="px-5 py-3">
+                        <div className="font-medium text-gray-800">{material.nom}</div>
+                        <div className="text-xs text-gray-400">{material.marque}</div>
+                      </td>
+
+                      {/* Quantity */}
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          min={1}
+                          value={qty}
+                          onChange={(e) => setQuantity(material.id, parseInt(e.target.value, 10) || 1)}
+                          className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center
                               focus:outline-none focus:ring-2 focus:ring-orange-400"
-                          />
-                        </td>
+                        />
+                      </td>
 
-                        {/* Per-supplier price × qty */}
-                        {SUPPLIERS.map((s) => {
-                          const cell = prices[material.id]?.[s.id];
-                          const ref = material.references_fournisseurs[s.id];
+                      {/* Per-supplier price × qty */}
+                      {SUPPLIERS.map((s) => {
+                        const cell = prices[material.id]?.[s.id];
+                        const ref = material.references_fournisseurs[s.id];
 
-                          if (!ref) {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
-                                Non référencé
-                              </td>
-                            );
-                          }
-                          if (!cell || cell.status === 'idle') {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
-                                —
-                              </td>
-                            );
-                          }
-                          if (cell.status === 'loading') {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right">
-                                <span className="text-gray-400 text-xs">…</span>
-                              </td>
-                            );
-                          }
-                          if (cell.status === 'error') {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right">
-                                <span className="text-red-400 text-xs" title={cell.errorMessage ?? ''}>⚠ Erreur</span>
-                              </td>
-                            );
-                          }
-                          const unitPrice = cell.data?.prix_ht ?? null;
-                          const lineTotal = unitPrice !== null ? unitPrice * qty : null;
+                        if (!ref) {
                           return (
-                            <td key={s.id} className="px-5 py-3 text-right">
-                              <div className="font-semibold text-gray-900 tabular-nums">
-                                {lineTotal !== null ? fmt(lineTotal) : '—'}
-                              </div>
-                              <div className="text-xs text-gray-400 tabular-nums">
-                                {unitPrice !== null ? `${fmt(unitPrice)} × ${qty}` : ''}
-                              </div>
+                            <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
+                              Non référencé
                             </td>
                           );
-                        })}
+                        }
+                        if (!cell || cell.status === 'idle') {
+                          return (
+                            <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
+                              —
+                            </td>
+                          );
+                        }
+                        if (cell.status === 'loading') {
+                          return (
+                            <td key={s.id} className="px-5 py-3 text-right">
+                              <span className="text-gray-400 text-xs">…</span>
+                            </td>
+                          );
+                        }
+                        if (cell.status === 'error') {
+                          return (
+                            <td key={s.id} className="px-5 py-3 text-right">
+                              <span className="text-red-400 text-xs" title={cell.errorMessage ?? ''}>⚠ Erreur</span>
+                            </td>
+                          );
+                        }
+                        const unitPrice = cell.data?.prix_ht ?? null;
+                        const lineTotal = unitPrice !== null ? unitPrice * qty : null;
+                        const cmp = rowComparison.get(s.id);
+                        return (
+                          <td key={s.id} className="px-5 py-3 text-right">
+                            <div
+                              className={`font-semibold tabular-nums ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}>
+                              {lineTotal !== null ? fmt(lineTotal) : '—'}
+                            </div>
+                            {cmp?.diffFromBest !== undefined && (
+                              <div className="text-xs tabular-nums text-red-300 font-medium">
+                                {fmtDiff(cmp.diffFromBest)}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-400 tabular-nums">
+                              {unitPrice !== null ? `${fmt(unitPrice)} × ${qty}` : ''}
+                            </div>
+                          </td>
+                        );
+                      })}
 
-                        {/* Remove */}
-                        <td className="px-3 py-3 text-right">
-                          <button
-                            onClick={() => removeItem(material.id)}
-                            className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded"
-                            title="Retirer de la commande"
-                            aria-label={`Retirer ${material.nom}`}
-                          >
-                            ✕
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </React.Fragment>
-              );
-            })}
+                      {/* Remove */}
+                      <td className="px-3 py-3 text-right">
+                        <button
+                          onClick={() => removeItem(material.id)}
+                          className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded"
+                          title="Retirer de la commande"
+                          aria-label={`Retirer ${material.nom}`}
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
           </tbody>
 
           {/* ── Totals row ── */}
           <tfoot>
-            <tr className="bg-gray-50 border-t-2 border-gray-200">
-              <td className="px-5 py-3 text-sm font-semibold text-gray-700">Total HT estimé</td>
-              <td />
-              {SUPPLIERS.map((s) => {
-                const { total, hasAllPrices } = supplierTotals[s.id];
+          <tr className="bg-gray-50 border-t-2 border-gray-200">
+            <td className="px-5 py-3 text-sm font-semibold text-gray-700">Total HT estimé</td>
+            <td/>
+            {(() => {
+              // Compute totals comparison across suppliers
+              const totalPrices = new Map<string, number>();
+              for (const s of SUPPLIERS) {
+                const t = supplierTotals[s.id].total;
+                if (t > 0) totalPrices.set(s.id, t);
+              }
+              const totalComparison = computeComparison(totalPrices);
+              return SUPPLIERS.map((s) => {
+                const {total, hasAllPrices} = supplierTotals[s.id];
+                const cmp = totalComparison.get(s.id);
                 return (
                   <td key={s.id} className="px-5 py-3 text-right">
-                    <div className="font-bold text-gray-900 tabular-nums text-base">
+                    <div
+                      className={`font-bold tabular-nums text-base ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}>
                       {total > 0 ? fmt(total) : '—'}
                     </div>
+                    {cmp?.diffFromBest !== undefined && (
+                      <div className="text-sm tabular-nums text-red-300 font-medium">
+                        {fmtDiff(cmp.diffFromBest)}
+                      </div>
+                    )}
                     {!hasAllPrices && total > 0 && (
                       <div className="text-xs text-amber-500">⚠ prix partiels</div>
                     )}
@@ -426,18 +480,19 @@ export function CommandeTab({ materials, prices, commande, scanning, onScan, onS
                       <button
                         onClick={() => handleExportEmail(s.id, s.label)}
                         className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium
-                          bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200
-                          transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400"
+                            bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200
+                            transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400"
                         title={`Exporter la commande ${s.label} (format e-mail)`}
                       >
-                        ✉ Exporter pour {s.label}
+                        ✉ {s.label}
                       </button>
                     )}
                   </td>
                 );
-              })}
-              <td />
-            </tr>
+              });
+            })()}
+            <td/>
+          </tr>
           </tfoot>
         </table>
       </div>
