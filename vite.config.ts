@@ -23,6 +23,14 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => path.replace(/^\/proxy\/materielelectrique/, ''),
       },
+      // Browser requests to /proxy/bricodepot/* are forwarded to bricodepot.fr
+      '/proxy/bricodepot': {
+        target: 'https://www.bricodepot.fr',
+        changeOrigin: true,
+        secure: true,
+        followRedirects: true,
+        rewrite: (path) => path.replace(/^\/proxy\/bricodepot/, ''),
+      },
     },
   },
   build: {

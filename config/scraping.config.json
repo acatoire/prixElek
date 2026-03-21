@@ -1,6 +1,7 @@
 {
-  "_comment": "Scraping configuration. Increase delayBetweenRequestsMs to avoid being banned.",
-  "delayBetweenRequestsMs": 3000,
-  "requestTimeoutMs": 15000,
-  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+  "_comment": "Scraping configuration. All adapters read this file at startup via loadScrapingConfig().",
+  "_comment_bricodepot": "bricodepot.fr returns 403 if requests arrive faster than ~10 s apart. Keep delayBetweenRequestsMs >= 10000. Firefox UA confirmed working (2026-03-21).",
+  "delayBetweenRequestsMs": 12000,
+  "requestTimeoutMs": 20000,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0"
 }

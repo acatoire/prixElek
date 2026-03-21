@@ -12,6 +12,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { MaterielElectriqueAdapter } from '@/adapters/materielelectrique';
 import { RexelAdapter, type RexelCredentials } from '@/adapters/rexel';
+import { BricodepotAdapter } from '@/adapters/bricodepot';
 import { SUPPLIERS } from '@/config/suppliers';
 import type { Material } from '@/types/material';
 import type { PriceCell, PriceMatrix } from '@/types/price';
@@ -40,12 +41,17 @@ interface UsePriceScanReturn {
   prices: PriceMatrix;
   scanning: boolean;
   /**
-   * @param materials      Full catalogue (used to resolve references)
-   * @param rexelCreds     Optional Rexel credentials (token + branchId)
-   * @param selectedIds    Only fetch prices for these material ids (order selection).
-   *                       When empty or omitted, all materials are scanned.
+   * @param materials         Full catalogue
+   * @param rexelCreds        Optional Rexel credentials
+   * @param selectedIds       Only fetch these material ids; omit to scan all
+   * @param bricodepotCookies Cookie: header value for Bricodepot session
    */
-  startScan: (materials: Material[], rexelCreds?: RexelCredentials, selectedIds?: Set<string>) => Promise<void>;
+  startScan: (
+    materials: Material[],
+    rexelCreds?: RexelCredentials,
+    selectedIds?: Set<string>,
+    bricodepotCookies?: string,
+  ) => Promise<void>;
   stopScan: () => void;
 }
 
@@ -67,7 +73,12 @@ export function usePriceScan(): UsePriceScanReturn {
   const stopScan = useCallback(() => { abortRef.current = true; }, []);
 
   const startScan = useCallback(
-    async (materials: Material[], rexelCreds?: RexelCredentials, selectedIds?: Set<string>) => {
+    async (
+      materials: Material[],
+      rexelCreds?: RexelCredentials,
+      selectedIds?: Set<string>,
+      bricodepotCookies?: string,
+    ) => {
       if (scanning) return;
       abortRef.current = false;
       setScanning(true);
@@ -97,6 +108,7 @@ export function usePriceScan(): UsePriceScanReturn {
 
       const meAdapter = new MaterielElectriqueAdapter();
       const rexelAdapter = rexelCreds ? new RexelAdapter(rexelCreds) : null;
+      const bricodepotAdapter = new BricodepotAdapter({ cookies: bricodepotCookies });
 
       for (const material of targets) {
         if (abortRef.current) {
@@ -131,13 +143,15 @@ export function usePriceScan(): UsePriceScanReturn {
             let price;
 
             if (s.id === 'materielelectrique') {
-              price = await meAdapter.getPrice(material.id, ref );
+              price = await meAdapter.getPrice(material.id, ref);
             } else if (s.id === 'rexel') {
               if (!rexelAdapter) {
                 setCell(material.id, s.id, { status: 'error', data: null, errorMessage: 'Non connecté à Rexel' });
                 return;
               }
               price = await rexelAdapter.getPrice(ref);
+            } else if (s.id === 'bricodepot') {
+              price = await bricodepotAdapter.getPrice(ref);
             } else {
               return;
             }

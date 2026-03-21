@@ -5,6 +5,9 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PriceCellDisplay } from './PriceCellDisplay';
 import type { PriceCell } from '@/types/price';
+import type { Material } from '@/types/material';
+
+// ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const SUCCESS_CELL: PriceCell = {
   status: 'success',
@@ -23,6 +26,38 @@ const NULL_PRICE_CELL: PriceCell = {
   data: { prix_ht: null, stock: null, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z' },
   errorMessage: null,
 };
+
+/** Cable material with both lot and metre-based packaging */
+const CABLE_MATERIAL: Material = {
+  id: 'cable-test',
+  nom: 'Câble 3G2.5',
+  marque: 'Nexans',
+  categorie: 'cables',
+  references_fournisseurs: { rexel: 'REF-CABLE', materielelectrique: 'REF-ME' },
+  cable: {
+    unite_base: 'ml',
+    packaging: {
+      rexel:              { lot_metres: 100, prix_base: 'lot' },
+      materielelectrique: { lot_metres: 100, prix_base: 'metre' },
+    },
+  },
+};
+
+/** prix_ht = price of the whole 100 m lot (prix_base: 'lot') */
+const CABLE_CELL_LOT: PriceCell = {
+  status: 'success',
+  data: { prix_ht: 75.0, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z' },
+  errorMessage: null,
+};
+
+/** prix_ht = price per metre (prix_base: 'metre') */
+const CABLE_CELL_METRE: PriceCell = {
+  status: 'success',
+  data: { prix_ht: 0.80, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z' },
+  errorMessage: null,
+};
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('PriceCellDisplay', () => {
   it('renders — (dash) when cell is undefined', () => {
@@ -80,5 +115,36 @@ describe('PriceCellDisplay', () => {
   it('renders — when price is null in a success cell', () => {
     render(<PriceCellDisplay cell={NULL_PRICE_CELL} />);
     expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  // ── Cable lot pricing ──────────────────────────────────────────────────────
+
+  it('shows lot price as headline for a cable priced per lot (prix_base: lot)', () => {
+    const { container } = render(
+      <PriceCellDisplay cell={CABLE_CELL_LOT} material={CABLE_MATERIAL} supplierId="rexel" />
+    );
+    // Headline span has the lot price (75 €)
+    const headline = container.querySelector('.font-semibold');
+    expect(headline?.textContent).toMatch(/75/);
+    // Sub-line contains €/m and lot size
+    expect(screen.getByText(/\/m/)).toBeInTheDocument();
+    expect(screen.getByText(/100 m/)).toBeInTheDocument();
+  });
+
+  it('shows lot price as headline for a cable priced per metre (prix_base: metre)', () => {
+    const { container } = render(
+      <PriceCellDisplay cell={CABLE_CELL_METRE} material={CABLE_MATERIAL} supplierId="materielelectrique" />
+    );
+    // Headline = 0.80 × 100 = 80 €
+    const headline = container.querySelector('.font-semibold');
+    expect(headline?.textContent).toMatch(/80/);
+    expect(screen.getByText(/\/m/)).toBeInTheDocument();
+  });
+
+  it('renders raw prix_ht with no lot info when no material prop given', () => {
+    render(<PriceCellDisplay cell={CABLE_CELL_LOT} />);
+    // Falls back to raw prix_ht = 75
+    expect(screen.getByText(/75/)).toBeInTheDocument();
+    expect(screen.queryByText(/\/m/)).not.toBeInTheDocument();
   });
 });

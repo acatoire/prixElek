@@ -20,6 +20,10 @@ vi.mock('@/adapters/rexel', () => ({
   RexelAdapter: vi.fn().mockImplementation(() => ({ getPrice: vi.fn().mockResolvedValue(null) })),
 }));
 
+vi.mock('@/adapters/bricodepot', () => ({
+  BricodepotAdapter: vi.fn().mockImplementation(() => ({ getPrice: vi.fn().mockResolvedValue(null) })),
+}));
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const MATERIAL_WITH_REF: Material = {

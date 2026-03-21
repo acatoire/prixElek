@@ -1,12 +1,13 @@
 [
   {
     "id": "NEX01272241N",
-    "nom": "Fil électrique rigide Nexans EASYFIL® 3 HO7V-U 2,5mm²",
+    "nom": "Fil électrique rigide 3g2.5 HO7V-U",
     "marque": "Nexans",
     "categorie": "cables",
     "references_fournisseurs": {
       "materielelectrique": "fil-electrique-rigide-nexans-easyfil-r-3-ho7v-u-2-5mm2-couronne-de-100m-p-686448",
       "rexel": "71487492",
+      "bricodepot": "catalogue/cable-electrique-r2v-3g25-mm-noir-100-m/prod10739",
       "sonepar": null,
       "yesss": null
     },
@@ -14,18 +15,20 @@
       "unite_base": "ml",
       "packaging": {
         "materielelectrique": { "lot_metres": 100, "prix_base": "metre" },
-        "rexel":              { "lot_metres": 25, "prix_base": "lot" }
+        "rexel":              { "lot_metres": 100, "prix_base": "lot" },
+        "bricodepot":         { "lot_metres": 100, "prix_base": "lot" }
       }
     }
   },
   {
     "id": "NEX01272240N",
-    "nom": "Fil électrique rigide Nexans EASYFIL® 3 HO7V-U 1,5mm²",
+    "nom": "Fil électrique rigide 3g1.5 HO7V-U",
     "marque": "Nexans",
     "categorie": "cables",
     "references_fournisseurs": {
       "materielelectrique": "fil-electrique-rigide-nexans-easyfil-r-3-ho7v-u-1-5mm2-1-p-651937",
       "rexel": "71343551",
+      "bricodepot": "catalogue/cable-electrique-rigide-r2v-3g15-mm-noir-100-m/prod10738",
       "sonepar": null,
       "yesss": null
     },
@@ -33,7 +36,8 @@
       "unite_base": "ml",
       "packaging": {
         "materielelectrique": { "lot_metres": 100, "prix_base": "metre" },
-        "rexel":              { "lot_metres": 25, "prix_base": "lot" }
+        "rexel":              { "lot_metres": 25,  "prix_base": "lot" },
+        "bricodepot":         { "lot_metres": 100, "prix_base": "lot" }
       }
     }
   }

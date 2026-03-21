@@ -2,7 +2,7 @@
  * src/App.test.tsx
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { App } from './App';
 
 // Mock heavy dependencies so App renders without real data/network
@@ -31,6 +31,7 @@ vi.mock('@/adapters/materielelectrique', () => ({
     getPrice: vi.fn(),
   })),
   DEFAULT_SCRAPING_CONFIG: { delayBetweenRequestsMs: 0, requestTimeoutMs: 5000, userAgent: 'test' },
+  loadScrapingConfig: vi.fn(() => ({ delayBetweenRequestsMs: 0, requestTimeoutMs: 5000, userAgent: 'test' })),
 }));
 
 describe('App', () => {
@@ -44,20 +45,18 @@ describe('App', () => {
     expect(screen.getByText('Prise Test')).toBeInTheDocument();
   });
 
-  it('renders the scan button', () => {
+  it('renders the scan button (disabled when nothing selected)', () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: 'Actualiser les prix' })).toBeInTheDocument();
+    const btn = screen.getByRole('button', { name: /Sélectionnez des articles/ });
+    expect(btn).toBeInTheDocument();
+    expect(btn).toBeDisabled();
   });
 
-  it('clicking the scan button triggers a scan', async () => {
+  it('scan button becomes enabled after selecting an item', async () => {
     render(<App />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Actualiser les prix' }));
-    });
-    // after click the button is either still present or replaced by "Scan en cours"
-    expect(
-      screen.queryByRole('button', { name: 'Actualiser les prix' }) ??
-      screen.queryByRole('button', { name: 'Scan en cours' })
-    ).toBeTruthy();
+    // Select the item via its checkbox
+    fireEvent.click(screen.getByRole('checkbox', { name: /Sélectionner Prise Test/ }));
+    const btn = screen.getByRole('button', { name: /Actualiser les prix/ });
+    expect(btn).toBeEnabled();
   });
 });

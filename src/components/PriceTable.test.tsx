@@ -62,11 +62,13 @@ describe('PriceTable', () => {
     expect(screen.getByText('Legrand')).toBeInTheDocument();
   });
 
-  it('shows the scan button when not scanning', () => {
+  it('shows the scan button when not scanning (disabled with no selection)', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
-    expect(screen.getByRole('button', { name: 'Actualiser les prix' })).toBeInTheDocument();
+    const btn = screen.getByRole('button', { name: /Sélectionnez des articles/ });
+    expect(btn).toBeInTheDocument();
+    expect(btn).toBeDisabled();
   });
 
   it('shows scanning state and disables button during scan', () => {
@@ -77,12 +79,13 @@ describe('PriceTable', () => {
     expect(screen.getByRole('button', { name: 'Arrêter le scan' })).toBeInTheDocument();
   });
 
-  it('calls onScan when button is clicked', () => {
+  it('calls onScan when button is clicked with selection', () => {
     const onScan = vi.fn();
     render(
-      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={onScan} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+      <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={onScan} onStop={vi.fn()} onEdit={vi.fn()}
+        selectedIds={new Set(['mat-1'])} onToggleSelect={vi.fn()} onToggleSelectAll={vi.fn()} />
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Actualiser les prix' }));
+    fireEvent.click(screen.getByRole('button', { name: /Actualiser les prix/ }));
     expect(onScan).toHaveBeenCalledOnce();
   });
 

@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Material } from '@/types/material';
+import { SUPPLIERS as SUPPLIER_DEFS } from '@/config/suppliers';
 
 interface EditMaterialModalProps {
   material: Material | null;
@@ -13,13 +14,11 @@ interface EditMaterialModalProps {
   onClose: () => void;
 }
 
-const SUPPLIERS = ['materielelectrique', 'rexel', 'sonepar', 'yesss'] as const;
-const SUPPLIER_LABELS: Record<string, string> = {
-  materielelectrique: 'Matériel Électrique',
-  rexel: 'Rexel',
-  sonepar: 'Sonepar',
-  yesss: 'YESSS Électrique',
-};
+// Derive supplier list from the single source of truth
+const SUPPLIERS = SUPPLIER_DEFS.map((s) => s.id);
+const SUPPLIER_LABELS: Record<string, string> = Object.fromEntries(
+  SUPPLIER_DEFS.map((s) => [s.id, s.label])
+);
 
 export function EditMaterialModal({
   material,

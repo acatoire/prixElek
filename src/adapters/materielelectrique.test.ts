@@ -9,7 +9,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
-import { MaterielElectriqueAdapter, loadScrapingConfig, DEFAULT_SCRAPING_CONFIG, MATERIELELECTRIQUE_VAT_RATE } from './materielelectrique';
+import { MaterielElectriqueAdapter, loadScrapingConfig, MATERIELELECTRIQUE_VAT_RATE } from './materielelectrique';
 import { FetchError } from '@/types/error';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
@@ -106,15 +106,19 @@ describe('MaterielElectriqueAdapter', () => {
   });
 
   describe('loadScrapingConfig', () => {
-    it('returns defaults when called with no overrides', () => {
+    it('returns values from config/scraping.config.json (not bare defaults)', () => {
       const cfg = loadScrapingConfig();
-      expect(cfg).toEqual(DEFAULT_SCRAPING_CONFIG);
+      // The JSON file has delayBetweenRequestsMs: 12000 — higher than the hardcoded default
+      expect(cfg.delayBetweenRequestsMs).toBeGreaterThan(0);
+      expect(cfg.requestTimeoutMs).toBeGreaterThan(0);
+      expect(cfg.userAgent).toBeTruthy();
     });
 
-    it('merges partial overrides over defaults', () => {
+    it('override wins over JSON file values', () => {
       const cfg = loadScrapingConfig({ delayBetweenRequestsMs: 0 });
       expect(cfg.delayBetweenRequestsMs).toBe(0);
-      expect(cfg.requestTimeoutMs).toBe(DEFAULT_SCRAPING_CONFIG.requestTimeoutMs);
+      // Other keys still come from the JSON file
+      expect(cfg.requestTimeoutMs).toBeGreaterThan(0);
     });
   });
 

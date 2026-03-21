@@ -7,23 +7,43 @@
  */
 import React, { useState, useMemo } from 'react';
 import type { Material } from '@/types/material';
+import { isCableMaterial } from '@/types/material';
 import type { PriceMatrix } from '@/types/price';
 import { PriceCellDisplay } from './PriceCellDisplay';
 import { SUPPLIERS } from '@/config/suppliers';
+import { calcCablePurchase } from '@/services/CableCalculator';
 
 /**
  * For a given material row, returns a map of supplierId → { isBest, diffFromBest }.
+ * For cable materials, comparison is based on the 1-reel lot price (not raw unit price).
  * Only considers suppliers with a successful price. Returns an empty map when
  * fewer than 2 prices are available (no comparison possible).
  */
 function computeRowComparison(
-  materialId: string,
+  material: Material,
   prices: PriceMatrix
 ): Map<string, { isBest: boolean; diffFromBest: number | undefined }> {
   const result = new Map<string, { isBest: boolean; diffFromBest: number | undefined }>();
   const available = SUPPLIERS
-    .map((s) => ({ id: s.id, price: prices[materialId]?.[s.id]?.data?.prix_ht ?? null }))
-    .filter((s): s is { id: string; price: number } => s.price !== null);
+    .map((s) => {
+      const rawPrice = prices[material.id]?.[s.id]?.data?.prix_ht ?? null;
+      if (rawPrice === null) return null;
+      // For cables: compare 1-reel lot price so €/lot is apples-to-apples
+      let comparePrice = rawPrice;
+      if (isCableMaterial(material)) {
+        const packaging = material.cable!.packaging[s.id];
+        if (packaging && packaging.lot_metres !== null) {
+          const { totalPrice } = calcCablePurchase({
+            neededMetres: packaging.lot_metres,
+            packaging,
+            unitPrice: rawPrice,
+          });
+          comparePrice = totalPrice ?? rawPrice;
+        }
+      }
+      return { id: s.id, price: comparePrice };
+    })
+    .filter((s): s is { id: string; price: number } => s !== null);
 
   if (available.length < 2) return result;
 
@@ -198,12 +218,17 @@ export function PriceTable({
           )}
           <button
             onClick={onScan}
-            disabled={scanning}
-            aria-label={scanning ? 'Scan en cours' : selectedCount > 0 ? `Actualiser les prix (${selectedCount})` : 'Actualiser les prix'}
+            disabled={scanning || selectedCount === 0}
+            title={selectedCount === 0 ? 'Cochez des articles pour lancer le scan' : undefined}
+            aria-label={
+              scanning ? 'Scan en cours'
+              : selectedCount > 0 ? `Actualiser les prix (${selectedCount} article${selectedCount > 1 ? 's' : ''})`
+              : 'Sélectionnez des articles pour scanner'
+            }
             className={[
               'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
               'transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400',
-              scanning
+              scanning || selectedCount === 0
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-orange-500 hover:bg-orange-600 text-white cursor-pointer',
             ].join(' ')}
@@ -211,7 +236,7 @@ export function PriceTable({
             {scanning ? (
               <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
             ) : selectedCount > 0 ? (
-              <><span>🔍</span>{selectedCount}</>
+              <><span>🔍</span><span>{selectedCount}</span></>
             ) : (
               <span>🔍</span>
             )}
@@ -316,7 +341,7 @@ export function PriceTable({
                     {/* ── Material rows ── */}
                     {!isCollapsed && items.map((material, idx) => {
                       const isSelected = selectedIds.has(material.id);
-                      const comparison = computeRowComparison(material.id, prices);
+                      const comparison = computeRowComparison(material, prices);
                       return (
                         <tr
                           key={material.id}
@@ -345,6 +370,8 @@ export function PriceTable({
                                 cell={prices[material.id]?.[s.id]}
                                 isBest={comparison.get(s.id)?.isBest}
                                 diffFromBest={comparison.get(s.id)?.diffFromBest}
+                                material={material}
+                                supplierId={s.id}
                               />
                             </td>
                           ))}

@@ -14,5 +14,6 @@ export interface SupplierDef {
 export const SUPPLIERS: SupplierDef[] = [
   { id: 'materielelectrique', label: 'Matériel Électrique', color: '#e65c00' },
   { id: 'rexel',              label: 'Rexel',               color: '#c8001e' },
+  { id: 'bricodepot',         label: 'Brico Dépôt',         color: '#007dc5' },
 ];
 

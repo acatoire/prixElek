@@ -65,13 +65,25 @@ export const DEFAULT_SCRAPING_CONFIG: ScrapingConfig = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
 };
 
+// Static JSON import — resolved by Vite (browser) and Vitest (Node) alike.
+// Path is relative to this file: src/adapters/ → ../../config/
+import scrapingConfigJson from '../../config/scraping.config.json';
+
 /**
- * Loads scraping configuration from config/scraping.config.json.
- * Falls back to DEFAULT_SCRAPING_CONFIG if the file is missing or invalid.
- * Accepts an optional override for testability.
+ * Returns the scraping configuration from config/scraping.config.json,
+ * merged over DEFAULT_SCRAPING_CONFIG, then optionally overridden (for tests).
  */
 export function loadScrapingConfig(override?: Partial<ScrapingConfig>): ScrapingConfig {
-  return {...DEFAULT_SCRAPING_CONFIG, ...override};
+  const fromFile: Partial<ScrapingConfig> = {
+    delayBetweenRequestsMs: (scrapingConfigJson as Record<string, unknown>).delayBetweenRequestsMs as number | undefined,
+    requestTimeoutMs:        (scrapingConfigJson as Record<string, unknown>).requestTimeoutMs        as number | undefined,
+    userAgent:               (scrapingConfigJson as Record<string, unknown>).userAgent               as string | undefined,
+  };
+  // Strip undefined values so they don't overwrite defaults
+  const cleaned = Object.fromEntries(
+    Object.entries(fromFile).filter(([, v]) => v !== undefined)
+  ) as Partial<ScrapingConfig>;
+  return { ...DEFAULT_SCRAPING_CONFIG, ...cleaned, ...override };
 }
 
 // ── Schema.org types ──────────────────────────────────────────────────────────

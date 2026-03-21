@@ -6,12 +6,14 @@ import { usePriceScan } from '@/hooks/usePriceScan';
 import { useCatalogue } from '@/hooks/useCatalogue';
 import { useCommande } from '@/hooks/useCommande';
 import { useRexelAuth } from '@/hooks/useRexelAuth';
+import { useBricodepotAuth } from '@/hooks/useBricodepotAuth';
 import { PriceTable } from '@/components/PriceTable';
 import { CatalogueToolbar } from '@/components/CatalogueToolbar';
 import { CommandeTab } from '@/components/CommandeTab';
 import { EditMaterialModal } from '@/components/EditMaterialModal';
 import { AddFromUrlModal } from '@/components/AddFromUrlModal';
 import { RexelLoginModal } from '@/components/RexelLoginModal';
+import { BricodepotLoginModal } from '@/components/BricodepotLoginModal';
 import type { Material, Catalog } from '@/types/material';
 
 type Tab = 'catalogue' | 'commande';
@@ -27,22 +29,23 @@ export function App(): React.ReactElement {
   } = useCatalogue();
   const { prices, scanning, startScan, stopScan } = usePriceScan();
   const rexelAuth = useRexelAuth();
+  const bricodepotAuth = useBricodepotAuth();
   const commande = useCommande();
   const { selectedIds, toggleSelected, setAllSelected } = commande;
 
   // Tabs
   const [activeTab, setActiveTab] = useState<Tab>('catalogue');
 
-  // Pass rexel credentials and selected ids to scan — only fetch prices for order items
   const handleScan = useCallback(
     () => startScan(
       materials,
       rexelAuth.isConnected
         ? { token: rexelAuth.token, branchId: rexelAuth.branchId, zipcode: rexelAuth.zipcode, city: rexelAuth.city }
         : undefined,
-      selectedIds.size > 0 ? selectedIds : undefined
+      selectedIds.size > 0 ? selectedIds : undefined,
+      bricodepotAuth.cookies || undefined,
     ),
-    [startScan, materials, rexelAuth, selectedIds]
+    [startScan, materials, rexelAuth, selectedIds, bricodepotAuth.cookies]
   );
 
   // Edit modal
@@ -53,6 +56,8 @@ export function App(): React.ReactElement {
 
   // Rexel login modal
   const [showRexelModal, setShowRexelModal] = useState(false);
+  // Bricodepot session modal
+  const [showBricodepotModal, setShowBricodepotModal] = useState(false);
 
   const toolbar = (
     <CatalogueToolbar
@@ -64,14 +69,16 @@ export function App(): React.ReactElement {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ── Header ── */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      {/* ── Header — pale green in dev to distinguish from production ── */}
+      <header className={`${import.meta.env.DEV ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'} border-b px-6 py-4`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚡</span>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">prixElek</h1>
-              <p className="text-sm text-gray-500">Comparateur de prix fournisseurs</p>
+              <p className={`text-sm ${import.meta.env.DEV ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
+                {import.meta.env.DEV ? '⚠ DEV — localhost' : 'Comparateur de prix fournisseurs'}
+              </p>
             </div>
           </div>
 
@@ -88,6 +95,18 @@ export function App(): React.ReactElement {
             >
               {rexelAuth.isConnected ? '🟢' : '🔴'}
               Rexel
+            </button>
+            <button
+              onClick={() => setShowBricodepotModal(true)}
+              className={[
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                bricodepotAuth.isConnected
+                  ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                  : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100',
+              ].join(' ')}
+            >
+              {bricodepotAuth.isConnected ? '🟢' : '🔴'}
+              Brico Dépôt
             </button>
           </div>
         </div>
@@ -160,6 +179,14 @@ export function App(): React.ReactElement {
       )}
       {showAddModal && (
         <AddFromUrlModal onAdd={addMaterial} onClose={() => setShowAddModal(false)} />
+      )}
+      {showBricodepotModal && (
+        <BricodepotLoginModal
+          currentCookies={bricodepotAuth.cookies}
+          onSave={bricodepotAuth.saveCookies}
+          onClear={bricodepotAuth.clearCookies}
+          onClose={() => setShowBricodepotModal(false)}
+        />
       )}
       {showRexelModal && (
         <RexelLoginModal
