@@ -7,6 +7,7 @@ import { useCatalogue } from '@/hooks/useCatalogue';
 import { useCommande } from '@/hooks/useCommande';
 import { useRexelAuth } from '@/hooks/useRexelAuth';
 import { useBricodepotAuth } from '@/hooks/useBricodepotAuth';
+import { useExportReminder } from '@/hooks/useExportReminder';
 import { PriceTable } from '@/components/PriceTable';
 import { CatalogueToolbar } from '@/components/CatalogueToolbar';
 import { CommandeTab } from '@/components/CommandeTab';
@@ -21,6 +22,8 @@ type Tab = 'catalogue' | 'commande';
 export function App(): React.ReactElement {
   const {
     materials,
+    lastModifiedAt,
+    lastExportedAt,
     importCatalogue,
     addMaterial,
     updateMaterial,
@@ -32,6 +35,7 @@ export function App(): React.ReactElement {
   const bricodepotAuth = useBricodepotAuth();
   const commande = useCommande();
   const { selectedIds, toggleSelected, setAllSelected } = commande;
+  const { showReminder, dismissReminder } = useExportReminder(lastModifiedAt, lastExportedAt);
 
   // Tabs
   const [activeTab, setActiveTab] = useState<Tab>('catalogue');
@@ -146,6 +150,32 @@ export function App(): React.ReactElement {
           </nav>
         </div>
       </div>
+
+      {/* ── Export reminder toast ── */}
+      {showReminder && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <span className="text-sm text-amber-800">
+              💾 Le catalogue a été modifié — pensez à l'exporter pour ne pas perdre vos changements.
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={exportCatalogue}
+                className="px-3 py-1 text-xs font-medium bg-amber-500 hover:bg-amber-600
+                  text-white rounded-lg transition-colors"
+              >
+                Exporter maintenant
+              </button>
+              <button
+                onClick={dismissReminder}
+                className="px-3 py-1 text-xs text-amber-700 hover:bg-amber-100 rounded-lg transition-colors"
+              >
+                Plus tard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Main content ── */}
       <main className="max-w-7xl mx-auto px-6 py-8">

@@ -2,9 +2,9 @@
  * src/hooks/useCatalogue.ts
  *
  * Manages the live catalogue state in-browser.
- *  - Initialized from the static Vite-bundled JSON files (same as loadAllMaterials)
- *  - Can be overridden by a user-imported JSON file
+ *  - Initialized from the static Vite-bundled JSON files
  *  - Provides add / update / remove / import / export
+ *  - Tracks lastModifiedAt / lastExportedAt for the unsaved-changes reminder
  */
 
 import { useState, useCallback } from 'react';
@@ -21,20 +21,18 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Internal type — materials carry their source filename while in state */
 type MaterialWithSource = Material & { _sourceFile: string };
 
 export interface UseCatalogueReturn {
   materials: Material[];
-  /** Replace the full catalogue (e.g. after JSON import) */
+  /** Timestamp (ms) of the last catalogue mutation — null if never modified */
+  lastModifiedAt: number | null;
+  /** Timestamp (ms) of the last export or import — null if never done */
+  lastExportedAt: number | null;
   importCatalogue: (items: Material[]) => void;
-  /** Add a new item (no-op if id already exists) */
   addMaterial: (item: Material) => boolean;
-  /** Replace an existing item in place */
   updateMaterial: (item: Material) => void;
-  /** Remove an item by id */
   removeMaterial: (id: string) => void;
-  /** Download the current catalogue as JSON */
   exportCatalogue: () => void;
 }
 
@@ -42,15 +40,17 @@ export function useCatalogue(): UseCatalogueReturn {
   const [materialsWithSource, setMaterialsWithSource] = useState<MaterialWithSource[]>(
     () => loadAllMaterialsWithSource()
   );
+  const [lastModifiedAt, setLastModifiedAt] = useState<number | null>(null);
+  const [lastExportedAt, setLastExportedAt] = useState<number | null>(null);
 
-  // Expose plain materials (without _sourceFile) to consumers
   const materials: Material[] = materialsWithSource.map(({ _sourceFile: _f, ...m }) => m);
 
   const importCatalogue = useCallback((items: Material[]) => {
-    // Imported items have no known source file — assign a default stem
-    setMaterialsWithSource(
-      items.map((m) => ({ ...m, _sourceFile: 'catalogue.import' }))
-    );
+    setMaterialsWithSource(items.map((m) => ({ ...m, _sourceFile: 'catalogue.import' })));
+    // Import counts as "in sync" — reset so reminder doesn't fire immediately
+    const now = Date.now();
+    setLastExportedAt(now);
+    setLastModifiedAt(null);
   }, []);
 
   const addMaterial = useCallback((item: Material): boolean => {
@@ -58,10 +58,10 @@ export function useCatalogue(): UseCatalogueReturn {
     setMaterialsWithSource((prev) => {
       if (prev.some((m) => m.id === item.id)) return prev;
       added = true;
-      // Newly added items: derive a source file from a slugified name stem
       const stem = `catalogue.${slugify(item.categorie || item.nom).slice(0, 40) || 'divers'}`;
       return [...prev, { ...item, _sourceFile: stem }];
     });
+    if (added) setLastModifiedAt(Date.now());
     return added;
   }, []);
 
@@ -69,17 +69,30 @@ export function useCatalogue(): UseCatalogueReturn {
     setMaterialsWithSource((prev) =>
       prev.map((m) => (m.id === item.id ? { ...item, _sourceFile: m._sourceFile } : m))
     );
+    setLastModifiedAt(Date.now());
   }, []);
 
   const removeMaterial = useCallback((id: string) => {
     setMaterialsWithSource((prev) => prev.filter((m) => m.id !== id));
+    setLastModifiedAt(Date.now());
   }, []);
 
   const exportCatalogue = useCallback(() => {
     exportCatalogueAsZip(materialsWithSource);
+    setLastExportedAt(Date.now());
+    setLastModifiedAt(null); // exported = back in sync
   }, [materialsWithSource]);
 
-  return { materials, importCatalogue, addMaterial, updateMaterial, removeMaterial, exportCatalogue };
+  return {
+    materials,
+    lastModifiedAt,
+    lastExportedAt,
+    importCatalogue,
+    addMaterial,
+    updateMaterial,
+    removeMaterial,
+    exportCatalogue,
+  };
 }
 
 /** Build a catalogue Material from scratch (used by the Add-from-URL flow) */
