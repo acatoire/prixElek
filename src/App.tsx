@@ -145,7 +145,7 @@ export function App(): React.ReactElement {
           />
         )}
         {activeTab === 'commande' && (
-          <CommandeTab materials={materials} prices={prices} commande={commande} />
+          <CommandeTab materials={materials} prices={prices} commande={commande} scanning={scanning} onScan={handleScan} onStop={stopScan} />
         )}
       </main>
 

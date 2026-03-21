@@ -17,6 +17,23 @@ const MATERIALS: Material[] = [
   },
 ];
 
+const MULTI_CAT_MATERIALS: Material[] = [
+  {
+    id: 'mat-1',
+    nom: 'Prise Céliane 4x2P+T',
+    marque: 'Legrand',
+    categorie: 'Prise de courant',
+    references_fournisseurs: { materielelectrique: 'LEG067128' },
+  },
+  {
+    id: 'mat-2',
+    nom: 'Plaque Céliane 1 poste',
+    marque: 'Legrand',
+    categorie: 'Façades',
+    references_fournisseurs: { materielelectrique: 'LEG066631' },
+  },
+];
+
 const EMPTY_PRICES: PriceMatrix = {};
 
 const SUCCESS_PRICES: PriceMatrix = {
@@ -37,13 +54,12 @@ const DEFAULT_SELECT_PROPS = {
 };
 
 describe('PriceTable', () => {
-  it('renders material name, brand and category', () => {
+  it('renders material name and brand', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
     expect(screen.getByText('Prise Céliane 4x2P+T')).toBeInTheDocument();
     expect(screen.getByText('Legrand')).toBeInTheDocument();
-    expect(screen.getByText('Prise de courant')).toBeInTheDocument();
   });
 
   it('shows the scan button when not scanning', () => {
@@ -112,7 +128,8 @@ describe('PriceTable', () => {
     render(
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
-    expect(screen.getByText(/1 article/)).toBeInTheDocument();
+    // "1 article" appears in toolbar title and in the category header row
+    expect(screen.getAllByText(/1 article/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows plural articles for multiple materials', () => {
@@ -123,7 +140,8 @@ describe('PriceTable', () => {
     render(
       <PriceTable materials={twoMaterials} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
-    expect(screen.getByText(/2 articles/)).toBeInTheDocument();
+    // toolbar shows "2 articles"; category header also shows "2 articles"
+    expect(screen.getAllByText(/2 articles/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows empty state when no materials', () => {
@@ -145,6 +163,68 @@ describe('PriceTable', () => {
       <PriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
     );
     expect(screen.queryByText(/Prix mis à jour/)).not.toBeInTheDocument();
+  });
+
+  it('renders a category header row for each category', () => {
+    render(
+      <PriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    expect(screen.getByLabelText(/Replier la catégorie Prise de courant/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Replier la catégorie Façades/i)).toBeInTheDocument();
+  });
+
+  it('collapses a category when its header row is clicked', () => {
+    render(
+      <PriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    // Both items visible initially
+    expect(screen.getByText('Prise Céliane 4x2P+T')).toBeInTheDocument();
+    expect(screen.getByText('Plaque Céliane 1 poste')).toBeInTheDocument();
+
+    // Click the "Prise de courant" category header
+    fireEvent.click(screen.getByLabelText(/Replier la catégorie Prise de courant/i));
+
+    // First item hidden, second still visible
+    expect(screen.queryByText('Prise Céliane 4x2P+T')).not.toBeInTheDocument();
+    expect(screen.getByText('Plaque Céliane 1 poste')).toBeInTheDocument();
+  });
+
+  it('expands a collapsed category when its header row is clicked again', () => {
+    render(
+      <PriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    const header = screen.getByLabelText(/Replier la catégorie Prise de courant/i);
+    fireEvent.click(header); // collapse
+    expect(screen.queryByText('Prise Céliane 4x2P+T')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Déplier la catégorie Prise de courant/i)); // expand
+    expect(screen.getByText('Prise Céliane 4x2P+T')).toBeInTheDocument();
+  });
+
+  it('shows "Tout replier" button when categories are expanded', () => {
+    render(
+      <PriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    expect(screen.getByRole('button', { name: 'Tout replier' })).toBeInTheDocument();
+  });
+
+  it('collapses all categories when "Tout replier" is clicked', () => {
+    render(
+      <PriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Tout replier' }));
+    expect(screen.queryByText('Prise Céliane 4x2P+T')).not.toBeInTheDocument();
+    expect(screen.queryByText('Plaque Céliane 1 poste')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tout déplier' })).toBeInTheDocument();
+  });
+
+  it('expands all categories when "Tout déplier" is clicked', () => {
+    render(
+      <PriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Tout replier' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tout déplier' }));
+    expect(screen.getByText('Prise Céliane 4x2P+T')).toBeInTheDocument();
+    expect(screen.getByText('Plaque Céliane 1 poste')).toBeInTheDocument();
   });
 });
 
