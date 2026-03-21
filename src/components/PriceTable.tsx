@@ -262,7 +262,7 @@ export function PriceTable({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 {/* Select-all checkbox */}
@@ -277,11 +277,13 @@ export function PriceTable({
                     aria-label="Tout sélectionner"
                   />
                 </th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/2">Matériel</th>
+                {/* Material column: takes all remaining width */}
+                <th className="text-left px-5 py-3 font-medium text-gray-500">Matériel</th>
+                {/* Supplier columns: fixed width sized to fit price + lot info */}
                 {SUPPLIERS.map((s) => (
                   <th
                     key={s.id}
-                    className="text-right px-5 py-3 font-medium text-gray-500 min-w-[140px]"
+                    className="text-right px-4 py-3 font-medium text-gray-500 w-[140px]"
                     style={{ borderTop: `3px solid ${s.color}` }}
                   >
                     {s.label}
@@ -365,7 +367,7 @@ export function PriceTable({
                             <div className="text-xs text-gray-400 mt-0.5">{material.marque}</div>
                           </td>
                           {SUPPLIERS.map((s) => (
-                            <td key={s.id} className="px-5 py-3.5 text-right">
+                            <td key={s.id} className="px-4 py-3.5 text-right">
                               <PriceCellDisplay
                                 cell={prices[material.id]?.[s.id]}
                                 isBest={comparison.get(s.id)?.isBest}

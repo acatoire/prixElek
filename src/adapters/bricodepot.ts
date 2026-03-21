@@ -18,9 +18,13 @@ import { loadScrapingConfig } from './materielelectrique';
 
 const BASE_URL = 'https://www.bricodepot.fr';
 
-function getBaseUrl(): string {
-  if (typeof window !== 'undefined') return '/proxy/bricodepot';
-  return BASE_URL;
+function getProductUrl(reference: string): string {
+  if (typeof window !== 'undefined') {
+    // Browser: use the Vite dev-server plugin endpoint which fetches Node-side
+    // (the Vite proxy triggers 403 on Bricodepot's WAF; direct Node fetch works).
+    return `/api/bricodepot-page?path=${encodeURIComponent(reference)}`;
+  }
+  return `${BASE_URL}/${reference}`;
 }
 
 export const BRICODEPOT_VAT_RATE = 0.2;
@@ -87,22 +91,25 @@ export class BricodepotAdapter extends SupplierAdapter {
     await this.throttle();
 
     const isBrowser = typeof window !== 'undefined';
-    const productUrl = `${getBaseUrl()}/${reference}`;
+    const productUrl = getProductUrl(reference);
 
     const headers: Record<string, string> = {
       'User-Agent': this.config.userAgent,
       ...BROWSER_HEADERS,
-      'Referer': isBrowser ? '/proxy/bricodepot/' : `${BASE_URL}/`,
+      'Referer': `${BASE_URL}/`,
       'Sec-Fetch-Site': 'same-origin',
     };
 
-    if (this.cookies) headers['Cookie'] = this.cookies;
+    // Cookie injection kept for Node CLI usage if ever needed — not required in practice
+    if (!isBrowser && this.cookies) headers['Cookie'] = this.cookies;
 
     let html: string;
     try {
       const response = await axios.get<ArrayBuffer | string>(productUrl, {
+        // Browser calls /api/bricodepot-page which returns decoded text.
+        // Node calls bricodepot.fr directly — use arraybuffer for UTF-8 safety.
         responseType: isBrowser ? 'text' : 'arraybuffer',
-        headers,
+        headers: isBrowser ? {} : headers, // browser endpoint handles its own headers
         timeout: this.config.requestTimeoutMs,
         maxRedirects: 5,
       });
