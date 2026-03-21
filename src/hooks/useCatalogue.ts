@@ -29,8 +29,13 @@ export interface UseCatalogueReturn {
   lastModifiedAt: number | null;
   /** Timestamp (ms) of the last export or import — null if never done */
   lastExportedAt: number | null;
+  /** Sorted list of existing catalogue file stems (e.g. "catalogue.cables") */
+  catalogueFiles: string[];
+  /** Map of file stem → sorted unique category labels found in that file */
+  fileCategories: Map<string, string[]>;
   importCatalogue: (items: Material[]) => void;
-  addMaterial: (item: Material) => boolean;
+  /** Add a material. Pass targetFile to pin it to a specific catalogue stem. */
+  addMaterial: (item: Material, targetFile?: string) => boolean;
   updateMaterial: (item: Material) => void;
   removeMaterial: (id: string) => void;
   exportCatalogue: () => void;
@@ -45,6 +50,22 @@ export function useCatalogue(): UseCatalogueReturn {
 
   const materials: Material[] = materialsWithSource.map(({ _sourceFile: _f, ...m }) => m);
 
+  /** Sorted, deduplicated list of catalogue stems currently in use. */
+  const catalogueFiles: string[] = Array.from(
+    new Set(materialsWithSource.map((m) => m._sourceFile))
+  ).sort();
+
+  /** Map of file stem → sorted unique category labels found in that file. */
+  const fileCategories = new Map<string, string[]>();
+  for (const m of materialsWithSource) {
+    const cats = fileCategories.get(m._sourceFile) ?? [];
+    if (!cats.includes(m.categorie)) cats.push(m.categorie);
+    fileCategories.set(m._sourceFile, cats);
+  }
+  for (const [stem, cats] of fileCategories) {
+    fileCategories.set(stem, cats.sort());
+  }
+
   const importCatalogue = useCallback((items: Material[]) => {
     setMaterialsWithSource(items.map((m) => ({ ...m, _sourceFile: 'catalogue.import' })));
     // Import counts as "in sync" — reset so reminder doesn't fire immediately
@@ -53,12 +74,14 @@ export function useCatalogue(): UseCatalogueReturn {
     setLastModifiedAt(null);
   }, []);
 
-  const addMaterial = useCallback((item: Material): boolean => {
+  const addMaterial = useCallback((item: Material, targetFile?: string): boolean => {
     let added = false;
     setMaterialsWithSource((prev) => {
       if (prev.some((m) => m.id === item.id)) return prev;
       added = true;
-      const stem = `catalogue.${slugify(item.categorie || item.nom).slice(0, 40) || 'divers'}`;
+      const stem =
+        targetFile ??
+        `catalogue.${slugify(item.categorie || item.nom).slice(0, 40) || 'divers'}`;
       return [...prev, { ...item, _sourceFile: stem }];
     });
     if (added) setLastModifiedAt(Date.now());
@@ -87,6 +110,8 @@ export function useCatalogue(): UseCatalogueReturn {
     materials,
     lastModifiedAt,
     lastExportedAt,
+    catalogueFiles,
+    fileCategories,
     importCatalogue,
     addMaterial,
     updateMaterial,

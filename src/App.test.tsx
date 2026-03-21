@@ -42,6 +42,8 @@ describe('App', () => {
 
   it('renders the catalogue table with a material', () => {
     render(<App />);
+    // Categories start collapsed — expand all first
+    fireEvent.click(screen.getByRole('button', { name: 'Tout déplier' }));
     expect(screen.getByText('Prise Test')).toBeInTheDocument();
   });
 
@@ -54,7 +56,8 @@ describe('App', () => {
 
   it('scan button becomes enabled after selecting an item', async () => {
     render(<App />);
-    // Select the item via its checkbox
+    // Categories start collapsed — expand all first so the row checkbox is rendered
+    fireEvent.click(screen.getByRole('button', { name: 'Tout déplier' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /Sélectionner Prise Test/ }));
     const btn = screen.getByRole('button', { name: /Actualiser les prix/ });
     expect(btn).toBeEnabled();

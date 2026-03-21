@@ -24,6 +24,8 @@ export function App(): React.ReactElement {
     materials,
     lastModifiedAt,
     lastExportedAt,
+    catalogueFiles,
+    fileCategories,
     importCatalogue,
     addMaterial,
     updateMaterial,
@@ -39,6 +41,26 @@ export function App(): React.ReactElement {
 
   // Tabs
   const [activeTab, setActiveTab] = useState<Tab>('catalogue');
+
+  // Collapsed categories — lifted here so state survives tab switches.
+  // Lazy initialiser runs once on mount and collapses all categories that exist at that point.
+  // Categories added later (via Add-from-URL) will appear expanded.
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+    () => new Set(materials.map((m) => m.categorie || 'Autre'))
+  );
+
+  const toggleCategory = useCallback((categorie: string) => {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categorie)) next.delete(categorie);
+      else next.add(categorie);
+      return next;
+    });
+  }, []);
+
+  const toggleAllCategories = useCallback((categoryKeys: string[], collapseAll: boolean) => {
+    setCollapsedCategories(collapseAll ? new Set(categoryKeys) : new Set());
+  }, []);
 
   const handleScan = useCallback(
     () => startScan(
@@ -191,6 +213,9 @@ export function App(): React.ReactElement {
             selectedIds={selectedIds}
             onToggleSelect={toggleSelected}
             onToggleSelectAll={setAllSelected}
+            collapsedCategories={collapsedCategories}
+            onToggleCategory={toggleCategory}
+            onToggleAllCategories={toggleAllCategories}
           />
         )}
         {activeTab === 'commande' && (
@@ -208,7 +233,12 @@ export function App(): React.ReactElement {
         />
       )}
       {showAddModal && (
-        <AddFromUrlModal onAdd={addMaterial} onClose={() => setShowAddModal(false)} />
+        <AddFromUrlModal
+          catalogueFiles={catalogueFiles}
+          fileCategories={fileCategories}
+          onAdd={addMaterial}
+          onClose={() => setShowAddModal(false)}
+        />
       )}
       {showBricodepotModal && (
         <BricodepotLoginModal

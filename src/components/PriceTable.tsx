@@ -67,6 +67,9 @@ interface PriceTableProps {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: (ids: string[], selected: boolean) => void;
+  collapsedCategories: Set<string>;
+  onToggleCategory: (categorie: string) => void;
+  onToggleAllCategories: (categoryKeys: string[], collapseAll: boolean) => void;
 }
 
 export function PriceTable({
@@ -80,19 +83,11 @@ export function PriceTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
+  collapsedCategories = new Set<string>(),
+  onToggleCategory,
+  onToggleAllCategories,
 }: PriceTableProps): React.ReactElement {
-  // Set of collapsed category names (all expanded by default)
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-
-  const toggleCategory = (categorie: string) => {
-    setCollapsedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(categorie)) next.delete(categorie);
-      else next.add(categorie);
-      return next;
-    });
-  };
 
   // Filter materials by search query (nom, marque, categorie)
   const filteredMaterials = useMemo(() => {
@@ -117,14 +112,10 @@ export function PriceTable({
     return map;
   }, [filteredMaterials]);
 
-  const allCollapsed = groups.size > 0 && collapsedCategories.size === groups.size;
+  const allCollapsed = groups.size > 0 && Array.from(groups.keys()).every((k) => collapsedCategories.has(k));
 
   const toggleAll = () => {
-    if (allCollapsed) {
-      setCollapsedCategories(new Set());
-    } else {
-      setCollapsedCategories(new Set(groups.keys()));
-    }
+    onToggleAllCategories(Array.from(groups.keys()), !allCollapsed);
   };
 
   const lastUpdated = Object.values(prices)
@@ -320,7 +311,7 @@ export function PriceTable({
                       <td
                         colSpan={colSpan - 1}
                         className="py-2 pr-4 cursor-pointer select-none"
-                        onClick={() => toggleCategory(categorie)}
+                        onClick={() => onToggleCategory(categorie)}
                         aria-label={`${isCollapsed ? 'Déplier' : 'Replier'} la catégorie ${categorie}`}
                       >
                         <div className="flex items-center gap-2">
