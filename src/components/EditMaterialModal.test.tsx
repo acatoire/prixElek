@@ -92,5 +92,15 @@ describe('EditMaterialModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
     expect(onSave.mock.calls[0][0].references_fournisseurs.materielelectrique).toBe('NEW-REF');
   });
+
+  it('updates marque and categorie fields', () => {
+    const onSave = vi.fn();
+    render(<EditMaterialModal material={MATERIAL} onSave={onSave} onDelete={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByDisplayValue('Legrand'), { target: { value: 'Schneider' } });
+    fireEvent.change(screen.getByDisplayValue('Prise de courant'), { target: { value: 'Interrupteur' } });
+    fireEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
+    expect(onSave.mock.calls[0][0].marque).toBe('Schneider');
+    expect(onSave.mock.calls[0][0].categorie).toBe('Interrupteur');
+  });
 });
 

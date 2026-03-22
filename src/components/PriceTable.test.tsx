@@ -245,5 +245,85 @@ describe('PriceTable', () => {
     expect(screen.getByText('Prise Céliane 4x2P+T')).toBeInTheDocument();
     expect(screen.getByText('Plaque Céliane 1 poste')).toBeInTheDocument();
   });
-});
 
+  // ── search filter ─────────────────────────────────────────────────────────
+
+  it('filters materials by search query (nom)', () => {
+    const { container } = render(
+      <CollapsiblePriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Plaque' } });
+    expect(screen.queryByText('Prise Céliane 4x2P+T')).not.toBeInTheDocument();
+    expect(screen.getByText('Plaque Céliane 1 poste')).toBeInTheDocument();
+    // Filtered count text is split across elements — check the heading element textContent
+    const heading = container.querySelector('h2');
+    expect(heading?.textContent).toMatch(/1.*\/.*2/);
+  });
+
+  it('shows no-results state when search matches nothing', () => {
+    render(
+      <CollapsiblePriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'xyzzy' } });
+    expect(screen.getByText(/Aucun résultat/)).toBeInTheDocument();
+    // Clearing the filter restores results
+    fireEvent.click(screen.getByRole('button', { name: /Effacer le filtre/ }));
+    expect(screen.getByText('Prise Céliane 4x2P+T')).toBeInTheDocument();
+  });
+
+  // ── cable material ────────────────────────────────────────────────────────
+
+  it('renders a cable material row', () => {
+    const cableMaterial: Material = {
+      id: 'cable-1', nom: 'Câble 3G2.5', marque: 'Nexans', categorie: 'Câbles',
+      references_fournisseurs: { materielelectrique: 'REF-CABLE' },
+      cable: { unite_base: 'ml', packaging: { materielelectrique: { lot_metres: 100, prix_base: 'metre' } } },
+    };
+    render(
+      <CollapsiblePriceTable materials={[cableMaterial]} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    expect(screen.getByText('Câble 3G2.5')).toBeInTheDocument();
+    expect(screen.getByText('Nexans')).toBeInTheDocument();
+  });
+
+  it('shows best-price highlight when two suppliers have success prices', () => {
+    const mat: Material = {
+      id: 'm', nom: 'Item', marque: 'B', categorie: 'C',
+      references_fournisseurs: { materielelectrique: 'ME-REF', rexel: 'RX-REF' },
+    };
+    const prices: PriceMatrix = {
+      m: {
+        materielelectrique: { status: 'success', data: { prix_ht: 10, stock: 1, unite: 'pièce', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+        rexel: { status: 'success', data: { prix_ht: 12, stock: 1, unite: 'pièce', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+      },
+    };
+    render(
+      <CollapsiblePriceTable materials={[mat]} prices={prices} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()} {...DEFAULT_SELECT_PROPS} />
+    );
+    // Both prices rendered — 10 and 12 may appear multiple times (cells + possible totals)
+    expect(screen.getAllByText(/10,00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/12,00/).length).toBeGreaterThan(0);
+  });
+
+  // ── select-all checkboxes ────────────────────────────────────────────────
+
+  it('calls onToggleSelectAll when the header select-all checkbox is changed', () => {
+    const onToggleSelectAll = vi.fn();
+    render(
+      <CollapsiblePriceTable materials={MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()}
+        selectedIds={new Set()} onToggleSelect={vi.fn()} onToggleSelectAll={onToggleSelectAll} />
+    );
+    fireEvent.click(screen.getByRole('checkbox', { name: /Tout sélectionner/ }));
+    expect(onToggleSelectAll).toHaveBeenCalled();
+  });
+
+  it('calls onToggleSelectAll when a category select-all checkbox is changed', () => {
+    const onToggleSelectAll = vi.fn();
+    render(
+      <CollapsiblePriceTable materials={MULTI_CAT_MATERIALS} prices={EMPTY_PRICES} scanning={false} onScan={vi.fn()} onStop={vi.fn()} onEdit={vi.fn()}
+        selectedIds={new Set()} onToggleSelect={vi.fn()} onToggleSelectAll={onToggleSelectAll} />
+    );
+    fireEvent.click(screen.getByRole('checkbox', { name: /Sélectionner catégorie Prise de courant/ }));
+    expect(onToggleSelectAll).toHaveBeenCalled();
+  });
+});

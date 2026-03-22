@@ -166,6 +166,75 @@ describe('usePriceScan', () => {
     expect(mockGetPrice).toHaveBeenCalledTimes(0);
   });
 
+  it('stopScan aborts the scan and resets loading cells to idle', async () => {
+    let resolveFirst!: (v: SupplierPrice) => void;
+    // First material hangs so we can call stopScan before it finishes
+    mockGetPrice.mockReturnValueOnce(
+      new Promise<SupplierPrice>((resolve) => { resolveFirst = resolve; })
+    );
+    // Second material would resolve instantly (but should be cancelled)
+    mockGetPrice.mockResolvedValue(MOCK_PRICE);
+
+    const { result } = renderHook(() => usePriceScan());
+
+    // Start scanning two materials
+    const scanPromise = act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF, MATERIAL_B]);
+    });
+
+    // Abort immediately
+    act(() => { result.current.stopScan(); });
+    resolveFirst(MOCK_PRICE);
+    await scanPromise;
+
+    // mat-b was never started (aborted) — cell should be idle (reset from loading)
+    const matBCell = result.current.prices['mat-b']?.['materielelectrique'];
+    expect(matBCell?.status === 'idle' || matBCell === undefined).toBe(true);
+  });
+
+  it('uses rexel adapter when rexelCreds are provided', async () => {
+    const { RexelAdapter } = await import('@/adapters/rexel');
+    const mockRexelGetPrice = vi.fn().mockResolvedValue(MOCK_PRICE);
+    vi.mocked(RexelAdapter).mockImplementation(() => ({ getPrice: mockRexelGetPrice }) as never);
+
+    const rexelMaterial: Material = {
+      id: 'rexel-mat',
+      nom: 'Rexel Only',
+      marque: 'Brand',
+      categorie: 'Cat',
+      references_fournisseurs: { rexel: 'REXEL-SKU' },
+    };
+
+    const { result } = renderHook(() => usePriceScan());
+    await act(async () => {
+      await result.current.startScan(
+        [rexelMaterial],
+        { token: 'tok', branchId: '4413', zipcode: '44880', city: 'SAUTRON' }
+      );
+    });
+
+    expect(mockRexelGetPrice).toHaveBeenCalledWith('REXEL-SKU');
+    expect(result.current.prices['rexel-mat']['rexel'].status).toBe('success');
+  });
+
+  it('sets rexel cell to error when not connected (no rexelCreds)', async () => {
+    const rexelMaterial: Material = {
+      id: 'rexel-mat',
+      nom: 'Rexel Only',
+      marque: 'Brand',
+      categorie: 'Cat',
+      references_fournisseurs: { rexel: 'REXEL-SKU' },
+    };
+
+    const { result } = renderHook(() => usePriceScan());
+    await act(async () => {
+      await result.current.startScan([rexelMaterial]);  // no rexelCreds
+    });
+
+    expect(result.current.prices['rexel-mat']['rexel'].status).toBe('error');
+    expect(result.current.prices['rexel-mat']['rexel'].errorMessage).toMatch(/Non connecté/);
+  });
+
   it('re-fetches when the cached price is stale (> 24h)', async () => {
     // First scan stores a fresh price
     mockGetPrice.mockResolvedValue(MOCK_PRICE);

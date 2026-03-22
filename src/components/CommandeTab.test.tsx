@@ -243,7 +243,244 @@ describe('CommandeTab', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tout déplier' }));
     expect(screen.getByText('Prise Céliane')).toBeInTheDocument();
   });
+
+  // ── email export (buildEmailBody / handleExportEmail) ─────────────────────
+
+  it('calls URL.createObjectURL when email export button is clicked', () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:fake');
+    const revokeObjectURL = vi.fn();
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(createObjectURL);
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(revokeObjectURL);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+      tag === 'a' ? ({ href: '', download: '', click: vi.fn() } as unknown as HTMLElement) : realCreate(tag)
+    );
+
+    render(
+      <CommandeTab materials={[MAT]} prices={SUCCESS_PRICES} commande={makeCommande(['mat-1'], { 'mat-1': 1 })} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    fireEvent.click(screen.getByTitle(/Exporter la commande Matériel/));
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    vi.restoreAllMocks();
+  });
+
+  // ── multi-supplier comparison (fmtDiff / computeComparison) ──────────────
+
+  it('shows diff-from-best label when two suppliers have different prices', () => {
+    const twoSupplierPrices: PriceMatrix = {
+      'mat-1': {
+        materielelectrique: { status: 'success', data: { prix_ht: 10.0, stock: 1, unite: 'pièce', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+        rexel: { status: 'success', data: { prix_ht: 12.0, stock: 1, unite: 'pièce', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+      },
+    };
+    const matWithRexel: Material = {
+      ...MAT,
+      references_fournisseurs: { materielelectrique: 'LEG067128', rexel: 'RX001', bricodepot: null },
+    };
+    render(
+      <CommandeTab materials={[matWithRexel]} prices={twoSupplierPrices} commande={makeCommande(['mat-1'], { 'mat-1': 1 })} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    // +2,00 € diff shown for the more expensive supplier
+    expect(screen.getAllByText(/\+/).length).toBeGreaterThan(0);
+  });
+
+  // ── cable price cells with success prices ─────────────────────────────────
+
+  it('renders cable price cell with lot breakdown when price is available', () => {
+    const cablePrices: PriceMatrix = {
+      'cable-1': {
+        materielelectrique: { status: 'success', data: { prix_ht: 0.85, stock: 1, unite: 'ml', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+      },
+    };
+    render(
+      <CommandeTab materials={[CABLE_MAT]} prices={cablePrices} commande={makeCommande(['cable-1'], { 'cable-1': 50 })} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    // Should show lot breakdown: "1 × 100 m = 100 m livrés"
+    expect(screen.getByText(/100 m/)).toBeInTheDocument();
+  });
+
+  it('renders cable loading cell', () => {
+    const cableLoadingPrices: PriceMatrix = {
+      'cable-1': {
+        materielelectrique: { status: 'loading', data: null, errorMessage: null },
+      },
+    };
+    render(
+      <CommandeTab materials={[CABLE_MAT]} prices={cableLoadingPrices} commande={makeCommande(['cable-1'], { 'cable-1': 10 })} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    expect(screen.getAllByText('…').length).toBeGreaterThan(0);
+  });
+
+  it('renders cable error cell', () => {
+    const cableErrorPrices: PriceMatrix = {
+      'cable-1': {
+        materielelectrique: { status: 'error', data: null, errorMessage: 'Timeout' },
+      },
+    };
+    render(
+      <CommandeTab materials={[CABLE_MAT]} prices={cableErrorPrices} commande={makeCommande(['cable-1'], { 'cable-1': 10 })} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    expect(screen.getAllByText(/Erreur/).length).toBeGreaterThan(0);
+  });
+
+  // ── import order from file ────────────────────────────────────────────────
+
+  it('calls importOrder when a JSON file is loaded', () => {
+    const commande = makeCommande();
+    render(
+      <CommandeTab materials={[MAT]} prices={EMPTY_PRICES} commande={commande} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const snapshot = JSON.stringify({
+      exportedAt: new Date().toISOString(),
+      lines: [{ materialId: 'mat-1', quantity: 2 }],
+    });
+    // Mock FileReader
+    const readAsTextMock = vi.fn().mockImplementation(function(this: FileReader) {
+      Object.defineProperty(this, 'result', { value: snapshot });
+      this.onload?.({ target: this } as ProgressEvent<FileReader>);
+    });
+    vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(readAsTextMock);
+    fireEvent.change(input, { target: { files: [new File([snapshot], 'order.json', { type: 'application/json' })] } });
+    expect(commande.importOrder).toHaveBeenCalledWith(snapshot);
+    vi.restoreAllMocks();
+  });
+
+  // ── partial prices warning ────────────────────────────────────────────────
+
+  it('shows partial prices warning when only some items have prices', () => {
+    // mat-1 has price but mat-2 does not — total shows "⚠ prix partiels"
+    const partialPrices: PriceMatrix = {
+      'mat-1': {
+        materielelectrique: { status: 'success', data: { prix_ht: 10.0, stock: 1, unite: 'pièce', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+      },
+      'mat-2': {
+        materielelectrique: { status: 'idle', data: null, errorMessage: null },
+      },
+    };
+    render(
+      <CommandeTab
+        materials={[MAT, MAT2]}
+        prices={partialPrices}
+        commande={makeCommande(['mat-1', 'mat-2'], { 'mat-1': 1, 'mat-2': 1 })}
+        scanning={false} onScan={vi.fn()} onStop={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/prix partiels/)).toBeInTheDocument();
+  });
+
+  // ── load button opens file input ──────────────────────────────────────────
+
+  it('load button triggers the hidden file input click', () => {
+    render(
+      <CommandeTab materials={[MAT]} prices={EMPTY_PRICES} commande={makeCommande()} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
+    fireEvent.click(screen.getByTitle(/Charger une commande/));
+    expect(clickSpy).toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  // ── category toggle in the order table ───────────────────────────────────
+
+  it('toggleCategory collapses and expands a category in the order table', () => {
+    render(
+      <CommandeTab materials={[MAT, MAT2]} prices={EMPTY_PRICES}
+        commande={makeCommande(['mat-1', 'mat-2'], { 'mat-1': 1, 'mat-2': 1 })}
+        scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    expect(screen.getByText('Prise Céliane')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Replier la catégorie Prise de courant/));
+    expect(screen.queryByText('Prise Céliane')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Déplier la catégorie Prise de courant/));
+    expect(screen.getByText('Prise Céliane')).toBeInTheDocument();
+  });
+
+  // ── cable removeItem ──────────────────────────────────────────────────────
+
+  it('calls removeItem when ✕ is clicked on a cable row', () => {
+    const commande = makeCommande(['cable-1'], { 'cable-1': 10 });
+    render(
+      <CommandeTab materials={[CABLE_MAT]} prices={EMPTY_PRICES} commande={commande} scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    fireEvent.click(screen.getByTitle(/Retirer/));
+    expect(commande.removeItem).toHaveBeenCalledWith('cable-1');
+  });
+
+  // ── email export per supplier (L651) ─────────────────────────────────────
+
+  it('calls URL.createObjectURL for each supplier email export button', () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:fake');
+    const revokeObjectURL = vi.fn();
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(createObjectURL);
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(revokeObjectURL);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+      tag === 'a' ? ({ href: '', download: '', click: vi.fn() } as unknown as HTMLElement) : realCreate(tag)
+    );
+
+    render(
+      <CommandeTab materials={[MAT]} prices={SUCCESS_PRICES}
+        commande={makeCommande(['mat-1'], { 'mat-1': 1 })}
+        scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    // Click the Rexel export button (always present when items selected)
+    fireEvent.click(screen.getByTitle(/Exporter la commande Rexel/));
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    vi.restoreAllMocks();
+  });
+
+  // ── cable best-price cell (L465/L469/L476) ────────────────────────────────
+
+  it('shows cable best-price and diff when two suppliers have cable prices', () => {
+    const cableWithBothPrices: PriceMatrix = {
+      'cable-1': {
+        materielelectrique: { status: 'success', data: { prix_ht: 0.80, stock: 1, unite: 'ml', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+        rexel: { status: 'success', data: { prix_ht: 0.95, stock: 1, unite: 'ml', fetchedAt: new Date().toISOString(), tiers: [] }, errorMessage: null },
+      },
+    };
+    const cableWithRexel: Material = {
+      ...CABLE_MAT,
+      references_fournisseurs: { materielelectrique: 'REF-CABLE', rexel: 'RX-CABLE', bricodepot: null },
+      cable: {
+        unite_base: 'ml',
+        packaging: {
+          materielelectrique: { lot_metres: 100, prix_base: 'metre' },
+          rexel: { lot_metres: 50, prix_base: 'lot' },
+        },
+      },
+    };
+    render(
+      <CommandeTab materials={[cableWithRexel]} prices={cableWithBothPrices}
+        commande={makeCommande(['cable-1'], { 'cable-1': 30 })}
+        scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    // At least one price shown
+    expect(screen.getAllByText(/m livrés|sur mesure|—/).length).toBeGreaterThan(0);
+  });
+
+  // ── buildEmailBody with cable + null price (L72 branch) ──────────────────
+
+  it('exports email with cable item that has no price', () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:fake');
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(createObjectURL);
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(vi.fn());
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+      tag === 'a' ? ({ href: '', download: '', click: vi.fn() } as unknown as HTMLElement) : realCreate(tag)
+    );
+    render(
+      <CommandeTab materials={[CABLE_MAT]} prices={EMPTY_PRICES}
+        commande={makeCommande(['cable-1'], { 'cable-1': 10 })}
+        scanning={false} onScan={vi.fn()} onStop={vi.fn()} />
+    );
+    fireEvent.click(screen.getByTitle(/Exporter la commande Matériel/));
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    vi.restoreAllMocks();
+  });
 });
+
 
 
 
