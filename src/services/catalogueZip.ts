@@ -43,7 +43,9 @@ export function exportCatalogueAsZip(materials: MaterialWithSource[]): void {
   }
 
   const zipped = zipSync(files, { level: 6 });
-  const blob = new Blob([zipped as BlobPart], { type: 'application/zip' });
+  const zipBuf = new ArrayBuffer(zipped.byteLength);
+  new Uint8Array(zipBuf).set(zipped);
+  const blob = new Blob([zipBuf], { type: 'application/zip' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
