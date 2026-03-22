@@ -3,17 +3,20 @@
  */
 import axios from 'axios';
 
-const url = process.argv[2] ?? 'https://www.bricodepot.fr/catalogue/cable-electrique-rigide-r2v-3g15-mm-noir-100-m/prod10738';
+const url =
+  process.argv[2] ??
+  'https://www.bricodepot.fr/catalogue/cable-electrique-rigide-r2v-3g15-mm-noir-100-m/prod10738';
 
 async function main(): Promise<void> {
   const res = await axios.get<ArrayBuffer>(url, {
     responseType: 'arraybuffer',
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'fr,fr-FR;q=0.9,en-US;q=0.8,en;q=0.7',
       'Accept-Encoding': 'gzip, deflate, br, zstd',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'Upgrade-Insecure-Requests': '1',
       'Sec-Fetch-Dest': 'document',
       'Sec-Fetch-Mode': 'navigate',
@@ -42,7 +45,7 @@ async function main(): Promise<void> {
   // All data-price attributes
   console.log('\n--- All data-price attrs ---');
   const dp = html.match(/<[^>]+data-price="[\d.]+[^>]*>/gi) ?? [];
-  dp.forEach(d => console.log(d.slice(0, 200)));
+  dp.forEach((d) => console.log(d.slice(0, 200)));
 
   // Check for bd-Product-price-national
   console.log('\n--- bd-Product-price context ---');
@@ -51,5 +54,7 @@ async function main(): Promise<void> {
   else console.log('NOT FOUND');
 }
 
-main().catch(e => { console.error(e instanceof Error ? e.message : e); process.exit(1); });
-
+main().catch((e) => {
+  console.error(e instanceof Error ? e.message : e);
+  process.exit(1);
+});

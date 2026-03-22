@@ -20,4 +20,3 @@ export interface CommandeSnapshot {
   exportedAt: string;
   lines: CommandeLine[];
 }
-

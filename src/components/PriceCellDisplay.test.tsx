@@ -37,7 +37,7 @@ const CABLE_MATERIAL: Material = {
   cable: {
     unite_base: 'ml',
     packaging: {
-      rexel:              { lot_metres: 100, prix_base: 'lot' },
+      rexel: { lot_metres: 100, prix_base: 'lot' },
       materielelectrique: { lot_metres: 100, prix_base: 'metre' },
     },
   },
@@ -53,7 +53,7 @@ const CABLE_CELL_LOT: PriceCell = {
 /** prix_ht = price per metre (prix_base: 'metre') */
 const CABLE_CELL_METRE: PriceCell = {
   status: 'success',
-  data: { prix_ht: 0.80, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z' },
+  data: { prix_ht: 0.8, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z' },
   errorMessage: null,
 };
 
@@ -77,9 +77,7 @@ describe('PriceCellDisplay', () => {
 
   it('renders error indicator when status is error', () => {
     render(
-      <PriceCellDisplay
-        cell={{ status: 'error', data: null, errorMessage: 'Network fail' }}
-      />
+      <PriceCellDisplay cell={{ status: 'error', data: null, errorMessage: 'Network fail' }} />
     );
     expect(screen.getByText(/Erreur/)).toBeInTheDocument();
     expect(screen.getByText('Network fail')).toBeInTheDocument();
@@ -98,7 +96,7 @@ describe('PriceCellDisplay', () => {
   });
 
   it('shows diff inline when diffFromBest is provided', () => {
-    render(<PriceCellDisplay cell={SUCCESS_CELL} diffFromBest={1.30} />);
+    render(<PriceCellDisplay cell={SUCCESS_CELL} diffFromBest={1.3} />);
     expect(screen.getByText(/\+.*1/)).toBeInTheDocument();
   });
 
@@ -133,7 +131,11 @@ describe('PriceCellDisplay', () => {
 
   it('shows lot price as headline for a cable priced per metre (prix_base: metre)', () => {
     const { container } = render(
-      <PriceCellDisplay cell={CABLE_CELL_METRE} material={CABLE_MATERIAL} supplierId="materielelectrique" />
+      <PriceCellDisplay
+        cell={CABLE_CELL_METRE}
+        material={CABLE_MATERIAL}
+        supplierId="materielelectrique"
+      />
     );
     // Headline = 0.80 × 100 = 80 €
     const headline = container.querySelector('.font-semibold');
@@ -151,13 +153,20 @@ describe('PriceCellDisplay', () => {
   // ── Tiered pricing ─────────────────────────────────────────────────────────
 
   const TIERS: PriceTier[] = [
-    { minQty: 1,  prix_ht: 1.2083, prix_ttc: 1.45, discountPct: 0 },
+    { minQty: 1, prix_ht: 1.2083, prix_ttc: 1.45, discountPct: 0 },
     { minQty: 20, prix_ht: 1.1333, prix_ttc: 1.36, discountPct: 6 },
   ];
 
   const TIERED_CELL: PriceCell = {
     status: 'success',
-    data: { prix_ht: 1.2083, prix_ttc: 1.45, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z', tiers: TIERS },
+    data: {
+      prix_ht: 1.2083,
+      prix_ttc: 1.45,
+      stock: 1,
+      unite: 'pièce',
+      fetchedAt: '2026-01-01T00:00:00Z',
+      tiers: TIERS,
+    },
     errorMessage: null,
   };
 
@@ -174,8 +183,13 @@ describe('PriceCellDisplay', () => {
   it('does not show 🧮 icon when only one tier (= just the base price)', () => {
     const singleTier: PriceCell = {
       status: 'success',
-      data: { prix_ht: 1.20, stock: 1, unite: 'pièce', fetchedAt: '2026-01-01T00:00:00Z',
-              tiers: [{ minQty: 1, prix_ht: 1.20, prix_ttc: 1.44, discountPct: 0 }] },
+      data: {
+        prix_ht: 1.2,
+        stock: 1,
+        unite: 'pièce',
+        fetchedAt: '2026-01-01T00:00:00Z',
+        tiers: [{ minQty: 1, prix_ht: 1.2, prix_ttc: 1.44, discountPct: 0 }],
+      },
       errorMessage: null,
     };
     render(<PriceCellDisplay cell={singleTier} />);

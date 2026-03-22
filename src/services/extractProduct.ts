@@ -165,9 +165,9 @@ export function findProductInHtml(html: string): SchemaProduct | null {
 export function extractCategoryFromHtml(html: string): string {
   const match = html.match(/"category"\s*:\s*"([^"]+)"/);
   if (!match) return 'Appareillage';
-  return match[1].trim().replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
-    String.fromCharCode(parseInt(hex, 16))
-  );
+  return match[1]
+    .trim()
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
 // ── Main pure extraction ──────────────────────────────────────────────────────
@@ -210,4 +210,3 @@ export function extractProductFromHtml(html: string, url: string): ExtractedProd
     ...(tiers ? { tiers } : {}),
   };
 }
-

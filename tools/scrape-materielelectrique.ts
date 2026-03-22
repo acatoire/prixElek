@@ -41,9 +41,7 @@ function loadAllMaterials(): Material[] {
 
 function findSlugForRef(ref: string): string | undefined {
   const materials = loadAllMaterials();
-  const match = materials.find(
-    (m) => m.references_fournisseurs['materielelectrique'] === ref
-  );
+  const match = materials.find((m) => m.references_fournisseurs['materielelectrique'] === ref);
   // Only return the slug if it contains -p-<digits> (real product page)
   if (match && /-p-\d+$/.test(match.id)) return match.id;
   return undefined;
@@ -92,8 +90,8 @@ async function main(): Promise<void> {
       if (!pageSlug) {
         console.error(
           `\n💡  Tip: add this product to the catalogue first with:\n` +
-          `     npx tsx tools/add-to-catalogue.ts <product-page-url>\n` +
-          `   Then re-run this script — it will use the direct page URL.`
+            `     npx tsx tools/add-to-catalogue.ts <product-page-url>\n` +
+            `   Then re-run this script — it will use the direct page URL.`
         );
       }
     } else {
@@ -112,7 +110,9 @@ async function main(): Promise<void> {
     const price = adapter.parseHtml(html, ref);
     console.log(`\n✅  Price found!`);
     console.log(`   Prix HT   : ${price.prix_ht} €`);
-    console.log(`   Stock     : ${price.stock === 1 ? '✅ En stock' : '❌ Sur commande / Indisponible'}`);
+    console.log(
+      `   Stock     : ${price.stock === 1 ? '✅ En stock' : '❌ Sur commande / Indisponible'}`
+    );
     console.log(`   Unité     : ${price.unite}`);
     console.log(`   Fetched at: ${price.fetchedAt}`);
   } catch (err: unknown) {
@@ -144,4 +144,3 @@ async function main(): Promise<void> {
 }
 
 main().catch(console.error);
-

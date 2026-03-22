@@ -45,9 +45,11 @@ function extractFromJwt(jwt: string): { accountId: string; webshopId: string; ap
     return {
       accountId: decoded.ERPCustomerID?.accountNumber ?? '',
       webshopId: decoded.WebshopID?.webshopId ?? '',
-      apiKey:    decoded.api_key ?? '',
+      apiKey: decoded.api_key ?? '',
     };
-  } catch { return { accountId: '', webshopId: '', apiKey: '' }; }
+  } catch {
+    return { accountId: '', webshopId: '', apiKey: '' };
+  }
 }
 
 async function probe(label: string, token: string, body: unknown): Promise<boolean> {
@@ -67,14 +69,19 @@ async function probe(label: string, token: string, body: unknown): Promise<boole
       },
       timeout: 15_000,
     });
-    const price = (res.data as { lines?: Array<{ prices?: Array<{ price?: { amount?: number }; priceLabel?: string }> }> })
-      .lines?.[0]?.prices?.find((p) => p.priceLabel === 'UNIT_LIST_PRICE')?.price?.amount;
+    const price = (
+      res.data as {
+        lines?: Array<{ prices?: Array<{ price?: { amount?: number }; priceLabel?: string }> }>;
+      }
+    ).lines?.[0]?.prices?.find((p) => p.priceLabel === 'UNIT_LIST_PRICE')?.price?.amount;
     console.log(`✅  HTTP ${res.status} — UNIT_LIST_PRICE = ${price ?? '(not found)'}`);
     console.log('    Body:', JSON.stringify(res.data).slice(0, 300));
     return true;
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      console.log(`❌  HTTP ${err.response?.status} — ${JSON.stringify(err.response?.data ?? err.message).slice(0, 300)}`);
+      console.log(
+        `❌  HTTP ${err.response?.status} — ${JSON.stringify(err.response?.data ?? err.message).slice(0, 300)}`
+      );
     } else {
       console.log(`❌  ${String(err)}`);
     }
@@ -85,9 +92,12 @@ async function probe(label: string, token: string, body: unknown): Promise<boole
 // ── main ──────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const [token, sku = '70569480', branchId = '4413', zipcode = '44880', city = 'SAUTRON'] = process.argv.slice(2);
+  const [token, sku = '70569480', branchId = '4413', zipcode = '44880', city = 'SAUTRON'] =
+    process.argv.slice(2);
   if (!token) {
-    console.error('Usage: npx tsx tools/probe-rexel.ts <bearer-token> [sku] [branchId] [zipcode] [city]');
+    console.error(
+      'Usage: npx tsx tools/probe-rexel.ts <bearer-token> [sku] [branchId] [zipcode] [city]'
+    );
     process.exit(1);
   }
 
@@ -105,15 +115,15 @@ async function main(): Promise<void> {
   const ok = await probe('V_REAL (correct shape)', token, {
     accountId,
     branchId,
-    pickupOptions:   { branchCode: branchId },
+    pickupOptions: { branchCode: branchId },
     deliveryOptions: {
       branchCode: branchId,
       location: { country: 'FR', zipcode, city },
     },
     stockReturnedOptions: {
-      includeDCStock:     true,
+      includeDCStock: true,
       includeBranchStock: true,
-      includeDelay:       true,
+      includeDelay: true,
     },
     includeLeasePrice: true,
     lines: [{ sku, quantity: { number: 1 } }],
@@ -158,5 +168,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
-
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

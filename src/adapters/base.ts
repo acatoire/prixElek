@@ -23,8 +23,10 @@ export abstract class SupplierAdapter {
    * Not required for suppliers with public prices.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async authenticate(_login: string, _password: string): Promise<{ success: boolean; token: string }> {
+  async authenticate(
+    _login: string,
+    _password: string
+  ): Promise<{ success: boolean; token: string }> {
     return { success: true, token: '' };
   }
 }
-

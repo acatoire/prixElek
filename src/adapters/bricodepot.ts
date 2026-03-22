@@ -30,16 +30,16 @@ function getProductUrl(reference: string): string {
 export const BRICODEPOT_VAT_RATE = 0.2;
 
 const BROWSER_HEADERS = {
-  'Accept':                    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language':           'fr,fr-FR;q=0.9,en-US;q=0.8,en;q=0.7',
-  'Accept-Encoding':           'gzip, deflate, br, zstd',
-  'Connection':                'keep-alive',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'fr,fr-FR;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Accept-Encoding': 'gzip, deflate, br, zstd',
+  Connection: 'keep-alive',
   'Upgrade-Insecure-Requests': '1',
-  'Sec-Fetch-Dest':            'document',
-  'Sec-Fetch-Mode':            'navigate',
-  'Sec-Fetch-Site':            'none',
-  'Priority':                  'u=0, i',
-  'TE':                        'trailers',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  Priority: 'u=0, i',
+  TE: 'trailers',
 } as const;
 
 interface SchemaOffer {
@@ -96,7 +96,7 @@ export class BricodepotAdapter extends SupplierAdapter {
     const headers: Record<string, string> = {
       'User-Agent': this.config.userAgent,
       ...BROWSER_HEADERS,
-      'Referer': `${BASE_URL}/`,
+      Referer: `${BASE_URL}/`,
       'Sec-Fetch-Site': 'same-origin',
     };
 
@@ -113,9 +113,10 @@ export class BricodepotAdapter extends SupplierAdapter {
         timeout: this.config.requestTimeoutMs,
         maxRedirects: 5,
       });
-      html = typeof response.data === 'string'
-        ? response.data
-        : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
+      html =
+        typeof response.data === 'string'
+          ? response.data
+          : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -123,9 +124,10 @@ export class BricodepotAdapter extends SupplierAdapter {
           throw new FetchError({
             code: 'RATE_LIMIT',
             supplierId: this.supplierId,
-            message: status === 403
-              ? 'Bricodepot 403 — session expirée, recollectez les cookies via le bouton 🍪'
-              : 'Rate limited by bricodepot.fr',
+            message:
+              status === 403
+                ? 'Bricodepot 403 — session expirée, recollectez les cookies via le bouton 🍪'
+                : 'Rate limited by bricodepot.fr',
             statusCode: status,
             retryable: false,
           });
@@ -176,7 +178,11 @@ export class BricodepotAdapter extends SupplierAdapter {
     for (const block of blocks) {
       const text = block.replace(/<\/?script[^>]*>/gi, '').trim();
       let obj: unknown;
-      try { obj = JSON.parse(text); } catch { continue; }
+      try {
+        obj = JSON.parse(text);
+      } catch {
+        continue;
+      }
       if (!obj || typeof obj !== 'object') continue;
       const product = obj as SchemaProduct;
       if (product['@type'] !== 'Product') continue;
@@ -216,4 +222,3 @@ export class BricodepotAdapter extends SupplierAdapter {
     };
   }
 }
-

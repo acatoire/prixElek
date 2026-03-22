@@ -8,11 +8,23 @@ import type { Catalog } from '@/types/material';
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const catalogA: Catalog = [
-  { id: 'item-a', nom: 'Item A', marque: 'BrandA', categorie: 'Cat1', references_fournisseurs: { materielelectrique: 'REF-A' } },
+  {
+    id: 'item-a',
+    nom: 'Item A',
+    marque: 'BrandA',
+    categorie: 'Cat1',
+    references_fournisseurs: { materielelectrique: 'REF-A' },
+  },
 ];
 
 const catalogB: Catalog = [
-  { id: 'item-b', nom: 'Item B', marque: 'BrandB', categorie: 'Cat2', references_fournisseurs: { materielelectrique: 'REF-B' } },
+  {
+    id: 'item-b',
+    nom: 'Item B',
+    marque: 'BrandB',
+    categorie: 'Cat2',
+    references_fournisseurs: { materielelectrique: 'REF-B' },
+  },
 ];
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

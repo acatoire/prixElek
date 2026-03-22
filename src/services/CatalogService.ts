@@ -22,7 +22,10 @@ export function loadAllMaterialsWithSource(
 
   for (const path of Object.keys(modules).sort()) {
     // Extract "catalogue.cables" from "/catalogue/catalogue.cables.json"
-    const stem = path.split('/').pop()!.replace(/\.json$/i, '');
+    const stem = path
+      .split('/')
+      .pop()!
+      .replace(/\.json$/i, '');
 
     const mod = modules[path] as { default: Catalog } | Catalog;
     const catalog: Catalog =
@@ -40,8 +43,6 @@ export function loadAllMaterialsWithSource(
 }
 
 /** Convenience wrapper — strips _sourceFile, used where provenance is not needed */
-export function loadAllMaterials(
-  modules: Record<string, unknown> = CATALOGUE_MODULES
-): Material[] {
+export function loadAllMaterials(modules: Record<string, unknown> = CATALOGUE_MODULES): Material[] {
   return loadAllMaterialsWithSource(modules).map(({ _sourceFile: _f, ...m }) => m);
 }

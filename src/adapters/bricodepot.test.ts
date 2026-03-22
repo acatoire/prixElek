@@ -82,11 +82,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 function mockPage(html: string, status = 200): void {
-  server.use(
-    http.get(PRODUCT_URL, () =>
-      HttpResponse.text(html, { status })
-    )
-  );
+  server.use(http.get(PRODUCT_URL, () => HttpResponse.text(html, { status })));
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -97,7 +93,11 @@ describe('BricodepotAdapter', () => {
   // Fresh adapter before each test — resets throttle state so tests don't wait 10 s each
   beforeEach(() => {
     // skipSessionSeed: true prevents the homepage fetch from triggering MSW
-    const opts: BricodepotConfig = { delayBetweenRequestsMs: 0, requestTimeoutMs: 5_000, skipSessionSeed: true };
+    const opts: BricodepotConfig = {
+      delayBetweenRequestsMs: 0,
+      requestTimeoutMs: 5_000,
+      skipSessionSeed: true,
+    };
     adapter = new BricodepotAdapter(opts);
   });
 
@@ -169,9 +169,7 @@ describe('BricodepotAdapter', () => {
 
   it('throws NETWORK_ERROR on connection refused', async () => {
     // No handler registered → MSW will throw
-    server.use(
-      http.get(PRODUCT_URL, () => HttpResponse.error())
-    );
+    server.use(http.get(PRODUCT_URL, () => HttpResponse.error()));
     await expect(adapter.getPrice(REF)).rejects.toBeInstanceOf(FetchError);
   });
 
@@ -213,4 +211,3 @@ describe('BricodepotAdapter', () => {
     });
   });
 });
-

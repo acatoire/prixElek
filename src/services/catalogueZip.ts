@@ -63,14 +63,14 @@ export function exportCatalogueAsZip(materials: MaterialWithSource[]): void {
 export function importCatalogueFromZip(buffer: ArrayBuffer): Catalog {
   const unzipped = unzipSync(new Uint8Array(buffer));
 
-  const catalogueFiles = Object.keys(unzipped).filter(
-    (name) => /^catalogue\..+\.json$/i.test(name)
+  const catalogueFiles = Object.keys(unzipped).filter((name) =>
+    /^catalogue\..+\.json$/i.test(name)
   );
 
   if (catalogueFiles.length === 0) {
     throw new Error(
       'Aucun fichier catalogue.*.json trouvé dans le zip.\n' +
-      'Vérifiez que le fichier a bien été exporté depuis prixElek.'
+        'Vérifiez que le fichier a bien été exporté depuis prixElek.'
     );
   }
 

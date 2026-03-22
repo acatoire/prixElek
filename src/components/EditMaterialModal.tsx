@@ -62,14 +62,19 @@ export function EditMaterialModal({
 
   const handleDelete = useCallback(() => {
     if (!material) return;
-    if (!confirmDelete) { setConfirmDelete(true); return; }
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
     onDelete(material.id);
     onClose();
   }, [material, confirmDelete, onDelete, onClose]);
 
   // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -79,20 +84,29 @@ export function EditMaterialModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">✏️ Modifier l'article</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            ×
+          </button>
         </div>
 
         {/* Body */}
         <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[70vh]">
           {/* id (readonly) */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Identifiant (slug)</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Identifiant (slug)
+            </label>
             <input
               readOnly
               value={material.id}
@@ -133,7 +147,9 @@ export function EditMaterialModal({
 
           {/* Supplier references */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">Références fournisseurs</label>
+            <label className="block text-xs font-medium text-gray-700 mb-2">
+              Références fournisseurs
+            </label>
             <div className="space-y-2">
               {SUPPLIERS.map((s) => (
                 <div key={s} className="flex items-center gap-2">
@@ -183,4 +199,3 @@ export function EditMaterialModal({
     </div>
   );
 }
-

@@ -43,13 +43,16 @@ async function main(): Promise<void> {
   const generator = html.match(/<meta[^>]+name=["']generator["'][^>]*>/i)?.[0] ?? 'not found';
   console.log(generator);
   // PrestaShop signature
-  if (html.includes('prestashop') || html.includes('PrestaShop')) console.log('→ PrestaShop detected');
-  if (html.includes('woocommerce') || html.includes('WooCommerce')) console.log('→ WooCommerce detected');
+  if (html.includes('prestashop') || html.includes('PrestaShop'))
+    console.log('→ PrestaShop detected');
+  if (html.includes('woocommerce') || html.includes('WooCommerce'))
+    console.log('→ WooCommerce detected');
   if (html.includes('magento') || html.includes('Magento')) console.log('→ Magento detected');
 
   // ── 2. JSON-LD structured data (most reliable for price) ─────────────────
   section('2. JSON-LD structured data');
-  const jsonldBlocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) ?? [];
+  const jsonldBlocks =
+    html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) ?? [];
   console.log(`Found ${jsonldBlocks.length} JSON-LD block(s)`);
   for (const block of jsonldBlocks) {
     const inner = block.replace(/<\/?script[^>]*>/gi, '').trim();
@@ -69,29 +72,31 @@ async function main(): Promise<void> {
 
   // ── 4. Inline product JS variables ───────────────────────────────────────
   section('4. Inline JS product/price variables');
-  const jsVars = html.match(
-    /(?:var|const|let)\s+\w*(?:product|price|prix|sku|ref)\w*\s*=\s*['"`\{][\s\S]{0,300}/gi
-  ) ?? [];
+  const jsVars =
+    html.match(
+      /(?:var|const|let)\s+\w*(?:product|price|prix|sku|ref)\w*\s*=\s*['"`\{][\s\S]{0,300}/gi
+    ) ?? [];
   jsVars.slice(0, 8).forEach((v) => console.log(v.slice(0, 200)));
 
   // ── 5. Price in HTML (itemprop / class / data-attr) ───────────────────────
   section('5. HTML price elements');
   const itemprops = html.match(/<[^>]+itemprop=["'](?:price|offers)[^>]*>[\s\S]{0,100}/gi) ?? [];
   const dataPrice = html.match(/<[^>]+data-price[^>]*>/gi) ?? [];
-  const classPrix = html.match(/<[^>]+class=["'][^"']*(?:prix|price)[^"']*["'][^>]*>[\s\S]{0,80}/gi) ?? [];
+  const classPrix =
+    html.match(/<[^>]+class=["'][^"']*(?:prix|price)[^"']*["'][^>]*>[\s\S]{0,80}/gi) ?? [];
   [...itemprops, ...dataPrice, ...classPrix].slice(0, 10).forEach((el) => console.log(el.trim()));
 
   // ── 6. AJAX / XHR endpoint candidates ────────────────────────────────────
   section('6. AJAX endpoint candidates');
-  const ajaxUrls = html.match(/['"]([^'"]*(?:ajax|api|price|product|catalog)[^'"]{0,80})['"]/gi) ?? [];
+  const ajaxUrls =
+    html.match(/['"]([^'"]*(?:ajax|api|price|product|catalog)[^'"]{0,80})['"]/gi) ?? [];
   const phpEndpoints = html.match(/['"]([^'"]+\.php[^'"]{0,60})['"]/gi) ?? [];
   [...new Set([...ajaxUrls, ...phpEndpoints])].slice(0, 15).forEach((u) => console.log(u));
 
   // ── 7. Product reference / SKU confirmation ───────────────────────────────
   section('7. Reference / SKU on page');
-  const refPatterns = html.match(
-    /(?:référence|reference|sku|ref\.?)\s*:?\s*<[^>]*>?\s*([A-Z0-9-]{4,20})/gi
-  ) ?? [];
+  const refPatterns =
+    html.match(/(?:référence|reference|sku|ref\.?)\s*:?\s*<[^>]*>?\s*([A-Z0-9-]{4,20})/gi) ?? [];
   refPatterns.slice(0, 5).forEach((r) => console.log(r));
   // Confirm our known ref
   if (html.includes('067128')) console.log('✅  Ref 067128 confirmed present in HTML');
@@ -99,7 +104,8 @@ async function main(): Promise<void> {
 
   // ── 8. PrestaShop-specific AJAX ───────────────────────────────────────────
   section('8. PrestaShop-specific endpoints');
-  const psAjax = html.match(/['"]([^'"]*(?:getproduct|productinfo|prices?|modules)[^'"]{0,80})['"]/gi) ?? [];
+  const psAjax =
+    html.match(/['"]([^'"]*(?:getproduct|productinfo|prices?|modules)[^'"]{0,80})['"]/gi) ?? [];
   psAjax.slice(0, 10).forEach((u) => console.log(u));
 
   // save raw HTML for manual inspection
@@ -113,4 +119,3 @@ main().catch((err) => {
   console.error('Error:', err.message);
   process.exit(1);
 });
-

@@ -38,7 +38,8 @@ async function main(): Promise<void> {
   console.log(`HTTP ${response.status} — page length: ${html.length} chars`);
 
   section('1. JSON-LD blocks');
-  const jsonldBlocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) ?? [];
+  const jsonldBlocks =
+    html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) ?? [];
   console.log(`Found ${jsonldBlocks.length} JSON-LD block(s)`);
   for (const block of jsonldBlocks) {
     const inner = block.replace(/<\/?script[^>]*>/gi, '').trim();
@@ -65,12 +66,12 @@ async function main(): Promise<void> {
   section('5. dataLayer / GTM');
   const dataLayers = html.match(/dataLayer\.push\(\{[\s\S]*?\}\)/g) ?? [];
   const dlVar = html.match(/var dataLayer\s*=\s*\[[\s\S]*?\]/g) ?? [];
-  [...dataLayers.slice(0,3), ...dlVar.slice(0,2)].forEach((dl) => console.log(dl.slice(0, 600)));
+  [...dataLayers.slice(0, 3), ...dlVar.slice(0, 2)].forEach((dl) => console.log(dl.slice(0, 600)));
 
   section('6. Inline JS price variables');
-  const jsVars = html.match(
-    /(?:var|const|let)\s+\w*(?:price|prix|product|sku)\w*\s*=\s*['"`\{][^;]{0,200}/gi
-  ) ?? [];
+  const jsVars =
+    html.match(/(?:var|const|let)\s+\w*(?:price|prix|product|sku)\w*\s*=\s*['"`\{][^;]{0,200}/gi) ??
+    [];
   jsVars.slice(0, 8).forEach((v) => console.log(v.slice(0, 200)));
 
   section('7. __NEXT_DATA__ / __NUXT__ / window.__');
@@ -88,4 +89,3 @@ main().catch((err) => {
   console.error('Error:', err instanceof Error ? err.message : err);
   process.exit(1);
 });
-

@@ -14,7 +14,8 @@ async function main(): Promise<void> {
   const response = await axios.get<ArrayBuffer>(url, {
     responseType: 'arraybuffer',
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'fr-FR,fr;q=0.9',
     },
@@ -37,8 +38,11 @@ async function main(): Promise<void> {
   const blocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) ?? [];
   if (blocks[0]) {
     const inner = blocks[0].replace(/<\/?script[^>]*>/gi, '').trim();
-    try { console.log(JSON.stringify(JSON.parse(inner), null, 2)); }
-    catch { console.log(inner); }
+    try {
+      console.log(JSON.stringify(JSON.parse(inner), null, 2));
+    } catch {
+      console.log(inner);
+    }
   }
 
   // Availability signals
@@ -68,4 +72,3 @@ main().catch((err) => {
   console.error('Error:', err instanceof Error ? err.message : err);
   process.exit(1);
 });
-

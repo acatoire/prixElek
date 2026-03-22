@@ -31,20 +31,32 @@ vi.mock('@/services/catalogueZip', () => ({
 vi.mock('@/adapters/materielelectrique', () => ({
   MaterielElectriqueAdapter: vi.fn().mockImplementation(() => ({ getPrice: vi.fn() })),
   DEFAULT_SCRAPING_CONFIG: { delayBetweenRequestsMs: 0, requestTimeoutMs: 5000, userAgent: 'test' },
-  loadScrapingConfig: vi.fn(() => ({ delayBetweenRequestsMs: 0, requestTimeoutMs: 5000, userAgent: 'test' })),
+  loadScrapingConfig: vi.fn(() => ({
+    delayBetweenRequestsMs: 0,
+    requestTimeoutMs: 5000,
+    userAgent: 'test',
+  })),
 }));
 
 // Controllable mocks for hooks that drive conditional UI
 const mockStartScan = vi.fn();
 const mockStopScan = vi.fn();
 vi.mock('@/hooks/usePriceScan', () => ({
-  usePriceScan: () => ({ prices: {}, scanning: false, startScan: mockStartScan, stopScan: mockStopScan }),
+  usePriceScan: () => ({
+    prices: {},
+    scanning: false,
+    startScan: mockStartScan,
+    stopScan: mockStopScan,
+  }),
 }));
 
 const mockDismissReminder = vi.fn();
 let mockShowReminder = false;
 vi.mock('@/hooks/useExportReminder', () => ({
-  useExportReminder: () => ({ showReminder: mockShowReminder, dismissReminder: mockDismissReminder }),
+  useExportReminder: () => ({
+    showReminder: mockShowReminder,
+    dismissReminder: mockDismissReminder,
+  }),
 }));
 
 let mockRexelConnected = false;

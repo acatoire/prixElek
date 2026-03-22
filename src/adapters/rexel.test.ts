@@ -9,7 +9,13 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
-import { RexelAdapter, decodeRexelToken, extractAccountId, extractWebshopId, extractApiKey } from './rexel';
+import {
+  RexelAdapter,
+  decodeRexelToken,
+  extractAccountId,
+  extractWebshopId,
+  extractApiKey,
+} from './rexel';
 
 const SKU = '70569480';
 const API_URL = 'https://eu.dif.rexel.com/web/api/v3/product/priceandavailability';
@@ -43,11 +49,13 @@ function makeResponse(overrides?: {
     lines: [
       {
         sku: o.sku,
-        prices: o.noPrices ? [] : [
-          { price: { amount: o.unitPrice, currency: 'EUR' }, priceLabel: 'UNIT_LIST_PRICE' },
-          { price: { amount: 21.05, currency: 'EUR' }, priceLabel: 'LINE_TOTAL_PRICE_NOVAT' },
-          { price: { amount: 33.904, currency: 'EUR' }, priceLabel: 'GROSS_LIST_PRICE' },
-        ],
+        prices: o.noPrices
+          ? []
+          : [
+              { price: { amount: o.unitPrice, currency: 'EUR' }, priceLabel: 'UNIT_LIST_PRICE' },
+              { price: { amount: 21.05, currency: 'EUR' }, priceLabel: 'LINE_TOTAL_PRICE_NOVAT' },
+              { price: { amount: 33.904, currency: 'EUR' }, priceLabel: 'GROSS_LIST_PRICE' },
+            ],
         availabilities: [
           { type: 'DELIVERY_BRANCH_AVAILABILITY', quantity: { available: o.availableQty } },
         ],
@@ -62,16 +70,18 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 function mockApi(body: object, status = 200) {
-  server.use(http.post(API_URL, () =>
-    status === 200
-      ? HttpResponse.json(body, { status: 200 })
-      : new HttpResponse(null, { status })
-  ));
+  server.use(
+    http.post(API_URL, () =>
+      status === 200 ? HttpResponse.json(body, { status: 200 }) : new HttpResponse(null, { status })
+    )
+  );
 }
 
 describe('RexelAdapter', () => {
   let adapter: RexelAdapter;
-  beforeAll(() => { adapter = new RexelAdapter(CREDS); });
+  beforeAll(() => {
+    adapter = new RexelAdapter(CREDS);
+  });
 
   // ── JWT helpers ─────────────────────────────────────────────────────────────
 
@@ -128,13 +138,23 @@ describe('RexelAdapter', () => {
   });
 
   it('throws AUTH_ERROR when no token provided', async () => {
-    const empty = new RexelAdapter({ token: '', branchId: BRANCH_ID, zipcode: '44880', city: 'SAUTRON' });
+    const empty = new RexelAdapter({
+      token: '',
+      branchId: BRANCH_ID,
+      zipcode: '44880',
+      city: 'SAUTRON',
+    });
     await expect(empty.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR' });
   });
 
   it('throws AUTH_ERROR when token has no accountId', async () => {
     const noAccount = `header.${Buffer.from('{"exp":9999}').toString('base64url')}.sig`;
-    const a = new RexelAdapter({ token: noAccount, branchId: BRANCH_ID, zipcode: '44880', city: 'SAUTRON' });
+    const a = new RexelAdapter({
+      token: noAccount,
+      branchId: BRANCH_ID,
+      zipcode: '44880',
+      city: 'SAUTRON',
+    });
     await expect(a.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR' });
   });
 
@@ -161,9 +181,7 @@ describe('RexelAdapter', () => {
 
     it('falls back to LINE_TOTAL_PRICE_NOVAT when UNIT_LIST_PRICE absent', async () => {
       const body = makeResponse();
-      body.lines[0].prices = body.lines[0].prices.filter(
-        (p) => p.priceLabel !== 'UNIT_LIST_PRICE'
-      );
+      body.lines[0].prices = body.lines[0].prices.filter((p) => p.priceLabel !== 'UNIT_LIST_PRICE');
       mockApi(body);
       const price = await adapter.getPrice(SKU);
       expect(price.prix_ht).toBe(21.05);
@@ -173,7 +191,10 @@ describe('RexelAdapter', () => {
   describe('getPrice — error cases', () => {
     it('throws AUTH_ERROR on HTTP 401', async () => {
       mockApi({}, 401);
-      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({ code: 'AUTH_ERROR', retryable: false });
+      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({
+        code: 'AUTH_ERROR',
+        retryable: false,
+      });
     });
 
     it('throws AUTH_ERROR on HTTP 403', async () => {
@@ -183,7 +204,10 @@ describe('RexelAdapter', () => {
 
     it('throws RATE_LIMIT on HTTP 429', async () => {
       mockApi({}, 429);
-      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({ code: 'RATE_LIMIT', retryable: true });
+      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({
+        code: 'RATE_LIMIT',
+        retryable: true,
+      });
     });
 
     it('throws NOT_FOUND on HTTP 404', async () => {
@@ -193,7 +217,10 @@ describe('RexelAdapter', () => {
 
     it('throws NETWORK_ERROR on HTTP 503', async () => {
       mockApi({}, 503);
-      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({ code: 'NETWORK_ERROR', retryable: true });
+      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({
+        code: 'NETWORK_ERROR',
+        retryable: true,
+      });
     });
 
     it('throws NETWORK_ERROR on connection failure', async () => {
@@ -218,4 +245,3 @@ describe('RexelAdapter', () => {
     });
   });
 });
-

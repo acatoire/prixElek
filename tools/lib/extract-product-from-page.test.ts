@@ -24,7 +24,6 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const PRODUCT_URL =
@@ -173,19 +172,20 @@ describe('extractProductFromHtml', () => {
   });
 
   it('throws when no Product JSON-LD is found', () => {
-    expect(() =>
-      extractProductFromHtml('<html><body>empty</body></html>', PRODUCT_URL)
-    ).toThrow('No schema.org/Product JSON-LD found');
-  });
-
-  it('throws when product name is empty', () => {
-    expect(() => extractProductFromHtml(makeHtml({ name: '' }), PRODUCT_URL)).toThrow(
-      'no name'
+    expect(() => extractProductFromHtml('<html><body>empty</body></html>', PRODUCT_URL)).toThrow(
+      'No schema.org/Product JSON-LD found'
     );
   });
 
+  it('throws when product name is empty', () => {
+    expect(() => extractProductFromHtml(makeHtml({ name: '' }), PRODUCT_URL)).toThrow('no name');
+  });
+
   it('throws when sku and mpn are both absent', () => {
-    const html = makeHtml({ sku: undefined as unknown as string, mpn: undefined as unknown as string });
+    const html = makeHtml({
+      sku: undefined as unknown as string,
+      mpn: undefined as unknown as string,
+    });
     expect(() => extractProductFromHtml(html, PRODUCT_URL)).toThrow('no sku/mpn');
   });
 });
@@ -194,9 +194,7 @@ describe('extractProductFromHtml', () => {
 
 describe('extractProductFromUrl', () => {
   it('fetches the page and returns an ExtractedProduct', async () => {
-    server.use(
-      http.get(PRODUCT_URL, () => HttpResponse.text(makeHtml(), { status: 200 }))
-    );
+    server.use(http.get(PRODUCT_URL, () => HttpResponse.text(makeHtml(), { status: 200 })));
     const result = await extractProductFromUrl(PRODUCT_URL, {
       ...DEFAULT_SCRAPING_CONFIG,
       requestTimeoutMs: 5_000,
@@ -213,4 +211,3 @@ describe('extractProductFromUrl', () => {
     await expect(extractProductFromUrl(PRODUCT_URL, DEFAULT_SCRAPING_CONFIG)).rejects.toThrow();
   });
 });
-

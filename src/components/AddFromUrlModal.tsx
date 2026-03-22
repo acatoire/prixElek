@@ -20,7 +20,12 @@ interface AddFromUrlModalProps {
 
 type Step = 'url' | 'fetching' | 'confirm' | 'catalogue' | 'done' | 'error';
 
-export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose }: AddFromUrlModalProps): React.ReactElement {
+export function AddFromUrlModal({
+  catalogueFiles,
+  fileCategories,
+  onAdd,
+  onClose,
+}: AddFromUrlModalProps): React.ReactElement {
   const [step, setStep] = useState<Step>('url');
   const [url, setUrl] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -79,13 +84,16 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
   }, [url]);
 
   /** Pre-fills category when an existing file is selected in the picker. */
-  const pickFile = useCallback((file: string) => {
-    setSelectedFile(file);
-    setIsNewFile(false);
-    const cats = fileCategories.get(file) ?? [];
-    // Auto-select: keep current categorie if it's already in this file, else use the first
-    setSelectedCategory((prev) => (cats.includes(prev) ? prev : cats[0] ?? ''));
-  }, [fileCategories]);
+  const pickFile = useCallback(
+    (file: string) => {
+      setSelectedFile(file);
+      setIsNewFile(false);
+      const cats = fileCategories.get(file) ?? [];
+      // Auto-select: keep current categorie if it's already in this file, else use the first
+      setSelectedCategory((prev) => (cats.includes(prev) ? prev : (cats[0] ?? '')));
+    },
+    [fileCategories]
+  );
 
   /** Move from confirm → catalogue picker. */
   const handleConfirmNext = useCallback(() => {
@@ -94,7 +102,7 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
       setSelectedFile(firstFile);
       setIsNewFile(false);
       const cats = fileCategories.get(firstFile) ?? [];
-      setSelectedCategory((prev) => (cats.includes(prev) ? prev : cats[0] ?? ''));
+      setSelectedCategory((prev) => (cats.includes(prev) ? prev : (cats[0] ?? '')));
     } else {
       setIsNewFile(true);
       setSelectedCategory('');
@@ -103,12 +111,10 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
   }, [catalogueFiles, selectedFile, fileCategories]);
 
   const handleAdd = useCallback(() => {
-    const targetFile = isNewFile
-      ? newFileName.trim() || undefined
-      : selectedFile || undefined;
+    const targetFile = isNewFile ? newFileName.trim() || undefined : selectedFile || undefined;
 
     // When adding to an existing file, use the chosen category from that file
-    const effectiveCategorie = (!isNewFile && selectedCategory) ? selectedCategory : categorie;
+    const effectiveCategorie = !isNewFile && selectedCategory ? selectedCategory : categorie;
 
     const material = buildMaterialFromExtracted({
       id,
@@ -120,10 +126,23 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
     const added = onAdd(material, targetFile);
     setAlreadyExists(!added);
     if (added) setStep('done');
-  }, [id, nom, marque, categorie, selectedCategory, refMe, onAdd, isNewFile, newFileName, selectedFile]);
+  }, [
+    id,
+    nom,
+    marque,
+    categorie,
+    selectedCategory,
+    refMe,
+    onAdd,
+    isNewFile,
+    newFileName,
+    selectedFile,
+  ]);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -131,13 +150,20 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">➕ Ajouter depuis une URL</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            ×
+          </button>
         </div>
 
         <div className="px-6 py-5">
@@ -146,7 +172,12 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
             <div className="space-y-4">
               <p className="text-sm text-gray-500">
                 Collez l'URL d'une fiche produit sur{' '}
-                <a href="https://www.materielelectrique.com" target="_blank" rel="noopener" className="text-orange-500 underline">
+                <a
+                  href="https://www.materielelectrique.com"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-orange-500 underline"
+                >
                   materielelectrique.com
                 </a>
               </p>
@@ -154,7 +185,9 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
                 autoFocus
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleFetch(); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleFetch();
+                }}
                 disabled={step === 'fetching'}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:bg-gray-50"
                 placeholder="https://www.materielelectrique.com/...-p-XXXXX.html"
@@ -170,7 +203,9 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
                     Récupération en cours…
                   </>
                 ) : (
-                  <><span>🔍</span> Analyser la page</>
+                  <>
+                    <span>🔍</span> Analyser la page
+                  </>
                 )}
               </button>
             </div>
@@ -199,7 +234,10 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Identifiant <span className="text-gray-400 font-normal">(réf. Matériel Électrique / SKU)</span>
+                    Identifiant{' '}
+                    <span className="text-gray-400 font-normal">
+                      (réf. Matériel Électrique / SKU)
+                    </span>
                   </label>
                   <input
                     value={id}
@@ -225,7 +263,9 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Catégorie
+                    </label>
                     <input
                       value={categorie}
                       onChange={(e) => setCategorie(e.target.value)}
@@ -235,7 +275,8 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Référence Matériel Électrique <span className="text-gray-400 font-normal">(slug URL)</span>
+                    Référence Matériel Électrique{' '}
+                    <span className="text-gray-400 font-normal">(slug URL)</span>
                   </label>
                   <input
                     value={refMe}
@@ -266,7 +307,9 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
           {/* ── Step: catalogue picker ── */}
           {step === 'catalogue' && (
             <div className="space-y-4">
-              <p className="text-xs text-gray-500">Dans quel fichier catalogue souhaitez-vous ajouter ce produit ?</p>
+              <p className="text-xs text-gray-500">
+                Dans quel fichier catalogue souhaitez-vous ajouter ce produit ?
+              </p>
 
               {catalogueFiles.length > 0 && (
                 <div className="space-y-2">
@@ -294,32 +337,36 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
                   ))}
 
                   {/* Category selector for the chosen existing file */}
-                  {!isNewFile && selectedFile && (() => {
-                    const cats = fileCategories.get(selectedFile) ?? [];
-                    if (cats.length === 0) return null;
-                    return (
-                      <div className="pl-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">
-                          Catégorie dans <span className="font-mono">{selectedFile}</span>
-                        </label>
-                        {cats.length === 1 ? (
-                          <p className="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                            {cats[0]}
-                          </p>
-                        ) : (
-                          <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
-                          >
-                            {cats.map((c) => (
-                              <option key={c} value={c}>{c}</option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  {!isNewFile &&
+                    selectedFile &&
+                    (() => {
+                      const cats = fileCategories.get(selectedFile) ?? [];
+                      if (cats.length === 0) return null;
+                      return (
+                        <div className="pl-2">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">
+                            Catégorie dans <span className="font-mono">{selectedFile}</span>
+                          </label>
+                          {cats.length === 1 ? (
+                            <p className="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                              {cats[0]}
+                            </p>
+                          ) : (
+                            <select
+                              value={selectedCategory}
+                              onChange={(e) => setSelectedCategory(e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                            >
+                              {cats.map((c) => (
+                                <option key={c} value={c}>
+                                  {c}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                   {/* New file option */}
                   <label
@@ -335,10 +382,16 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
                       name="catalogue-file"
                       value="__new__"
                       checked={isNewFile}
-                      onChange={() => { setIsNewFile(true); setSelectedFile(''); setSelectedCategory(''); }}
+                      onChange={() => {
+                        setIsNewFile(true);
+                        setSelectedFile('');
+                        setSelectedCategory('');
+                      }}
                       className="accent-orange-500"
                     />
-                    <span className="text-sm text-gray-700">➕ Créer un nouveau fichier catalogue…</span>
+                    <span className="text-sm text-gray-700">
+                      ➕ Créer un nouveau fichier catalogue…
+                    </span>
                   </label>
                 </div>
               )}
@@ -362,7 +415,10 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
 
               <div className="flex gap-2 pt-1">
                 <button
-                  onClick={() => { setStep('confirm'); setAlreadyExists(false); }}
+                  onClick={() => {
+                    setStep('confirm');
+                    setAlreadyExists(false);
+                  }}
                   className="flex-1 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
                 >
                   ← Retour
@@ -386,7 +442,11 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
               <p className="text-sm text-gray-500">ajouté au catalogue avec succès.</p>
               <div className="flex gap-2 justify-center pt-1">
                 <button
-                  onClick={() => { setStep('url'); setUrl(''); setNom(''); }}
+                  onClick={() => {
+                    setStep('url');
+                    setUrl('');
+                    setNom('');
+                  }}
                   className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
                 >
                   Ajouter un autre
@@ -405,4 +465,3 @@ export function AddFromUrlModal({ catalogueFiles, fileCategories, onAdd, onClose
     </div>
   );
 }
-

@@ -8,8 +8,12 @@ import { zipSync, strToU8 } from 'fflate';
 
 // Mock the zip/json import services
 vi.mock('@/services/catalogueZip', () => ({
-  importCatalogueFromZip: vi.fn(() => [{ id: 'zip-mat', nom: 'Zip Item', marque: 'B', categorie: 'C', references_fournisseurs: {} }]),
-  importCatalogueFromJson: vi.fn(() => [{ id: 'json-mat', nom: 'JSON Item', marque: 'B', categorie: 'C', references_fournisseurs: {} }]),
+  importCatalogueFromZip: vi.fn(() => [
+    { id: 'zip-mat', nom: 'Zip Item', marque: 'B', categorie: 'C', references_fournisseurs: {} },
+  ]),
+  importCatalogueFromJson: vi.fn(() => [
+    { id: 'json-mat', nom: 'JSON Item', marque: 'B', categorie: 'C', references_fournisseurs: {} },
+  ]),
 }));
 
 function makeZipFile(): File {
@@ -20,7 +24,11 @@ function makeZipFile(): File {
 }
 
 function makeJsonFile(): File {
-  return new File(['[{"id":"x","nom":"X","marque":"B","categorie":"C","references_fournisseurs":{}}]'], 'test.json', { type: 'application/json' });
+  return new File(
+    ['[{"id":"x","nom":"X","marque":"B","categorie":"C","references_fournisseurs":{}}]'],
+    'test.json',
+    { type: 'application/json' }
+  );
 }
 
 describe('CatalogueToolbar', () => {
@@ -35,30 +43,38 @@ describe('CatalogueToolbar', () => {
   });
 
   it('renders the three action buttons', () => {
-    render(<CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
     expect(screen.getByTitle(/Importer/)).toBeInTheDocument();
     expect(screen.getByTitle(/Exporter/)).toBeInTheDocument();
     expect(screen.getByTitle(/Ajouter/)).toBeInTheDocument();
   });
 
   it('calls onExport when the export button is clicked', () => {
-    render(<CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
     fireEvent.click(screen.getByTitle(/Exporter/));
     expect(onExport).toHaveBeenCalledOnce();
   });
 
   it('calls onAddFromUrl when the ➕ button is clicked', () => {
-    render(<CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
     fireEvent.click(screen.getByTitle(/Ajouter/));
     expect(onAddFromUrl).toHaveBeenCalledOnce();
   });
 
   it('calls onImport with JSON items when a .json file is selected', async () => {
-    render(<CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = makeJsonFile();
     // Simulate FileReader loading
-    const readAsArrayBufferMock = vi.fn().mockImplementation(function(this: FileReader) {
+    const readAsArrayBufferMock = vi.fn().mockImplementation(function (this: FileReader) {
       const result = new TextEncoder().encode(
         '[{"id":"x","nom":"X","marque":"B","categorie":"C","references_fournisseurs":{}}]'
       ).buffer;
@@ -72,10 +88,12 @@ describe('CatalogueToolbar', () => {
   });
 
   it('calls onImport with zip items when a .zip file is selected', async () => {
-    render(<CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = makeZipFile();
-    const readAsArrayBufferMock = vi.fn().mockImplementation(function(this: FileReader) {
+    const readAsArrayBufferMock = vi.fn().mockImplementation(function (this: FileReader) {
       Object.defineProperty(this, 'result', { value: new ArrayBuffer(0) });
       this.onload?.({ target: this } as ProgressEvent<FileReader>);
     });
@@ -86,13 +104,11 @@ describe('CatalogueToolbar', () => {
   });
 
   it('does nothing when no file is selected', () => {
-    render(<CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [] } });
     expect(onImport).not.toHaveBeenCalled();
   });
 });
-
-
-
-

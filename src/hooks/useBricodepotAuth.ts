@@ -19,9 +19,7 @@ export interface UseBricodepotAuthReturn {
 }
 
 export function useBricodepotAuth(): UseBricodepotAuthReturn {
-  const [cookies, setCookies] = useState<string>(
-    () => localStorage.getItem(STORAGE_KEY) ?? ''
-  );
+  const [cookies, setCookies] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? '');
 
   const saveCookies = useCallback((raw: string) => {
     const clean = raw.trim();
@@ -41,4 +39,3 @@ export function useBricodepotAuth(): UseBricodepotAuthReturn {
     clearCookies,
   };
 }
-

@@ -19,9 +19,9 @@
  */
 
 import axios from 'axios';
-import {SupplierAdapter} from './base';
-import {FetchError} from '@/types/error';
-import type {SupplierPrice} from '@/types/price';
+import { SupplierAdapter } from './base';
+import { FetchError } from '@/types/error';
+import type { SupplierPrice } from '@/types/price';
 import { extractTiersFromHtml } from '@/services/extractProduct';
 
 const BASE_URL = 'https://www.materielelectrique.com';
@@ -76,9 +76,12 @@ import scrapingConfigJson from '../../config/scraping.config.json';
  */
 export function loadScrapingConfig(override?: Partial<ScrapingConfig>): ScrapingConfig {
   const fromFile: Partial<ScrapingConfig> = {
-    delayBetweenRequestsMs: (scrapingConfigJson as Record<string, unknown>).delayBetweenRequestsMs as number | undefined,
-    requestTimeoutMs:        (scrapingConfigJson as Record<string, unknown>).requestTimeoutMs        as number | undefined,
-    userAgent:               (scrapingConfigJson as Record<string, unknown>).userAgent               as string | undefined,
+    delayBetweenRequestsMs: (scrapingConfigJson as Record<string, unknown>)
+      .delayBetweenRequestsMs as number | undefined,
+    requestTimeoutMs: (scrapingConfigJson as Record<string, unknown>).requestTimeoutMs as
+      | number
+      | undefined,
+    userAgent: (scrapingConfigJson as Record<string, unknown>).userAgent as string | undefined,
   };
   // Strip undefined values so they don't overwrite defaults
   const cleaned = Object.fromEntries(
@@ -175,9 +178,10 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
         },
         timeout: this.config.requestTimeoutMs,
       });
-      html = typeof response.data === 'string'
-        ? response.data
-        : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
+      html =
+        typeof response.data === 'string'
+          ? response.data
+          : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -214,9 +218,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
    * Looks for an item whose sku or mpn matches the reference (case-insensitive).
    */
   parseHtml(html: string, reference: string): SupplierPrice {
-    const blocks = html.match(
-      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi
-    );
+    const blocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi);
 
     if (!blocks || blocks.length === 0) {
       throw new FetchError({
@@ -253,10 +255,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
   }
 
   /** Recursively search a parsed JSON-LD object for a Product matching the reference */
-  private findMatchingProduct(
-    node: unknown,
-    normalizedRef: string
-  ): SchemaProduct | null {
+  private findMatchingProduct(node: unknown, normalizedRef: string): SchemaProduct | null {
     if (!node || typeof node !== 'object') return null;
 
     const obj = node as Record<string, unknown>;
@@ -325,12 +324,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
       stock: inStock ? 1 : 0,
       unite: 'pièce',
       fetchedAt: new Date().toISOString(),
-      tiers: tiers ?? [],   // [] = "no tiers" (checked); undefined = "not yet fetched"
+      tiers: tiers ?? [], // [] = "no tiers" (checked); undefined = "not yet fetched"
     };
   }
 }
-
-
-
-
-

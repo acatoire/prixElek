@@ -24,26 +24,24 @@ function computeRowComparison(
   prices: PriceMatrix
 ): Map<string, { isBest: boolean; diffFromBest: number | undefined }> {
   const result = new Map<string, { isBest: boolean; diffFromBest: number | undefined }>();
-  const available = SUPPLIERS
-    .map((s) => {
-      const rawPrice = prices[material.id]?.[s.id]?.data?.prix_ht ?? null;
-      if (rawPrice === null) return null;
-      // For cables: compare 1-reel lot price so €/lot is apples-to-apples
-      let comparePrice = rawPrice;
-      if (isCableMaterial(material)) {
-        const packaging = material.cable!.packaging[s.id];
-        if (packaging && packaging.lot_metres !== null) {
-          const { totalPrice } = calcCablePurchase({
-            neededMetres: packaging.lot_metres,
-            packaging,
-            unitPrice: rawPrice,
-          });
-          comparePrice = totalPrice ?? rawPrice;
-        }
+  const available = SUPPLIERS.map((s) => {
+    const rawPrice = prices[material.id]?.[s.id]?.data?.prix_ht ?? null;
+    if (rawPrice === null) return null;
+    // For cables: compare 1-reel lot price so €/lot is apples-to-apples
+    let comparePrice = rawPrice;
+    if (isCableMaterial(material)) {
+      const packaging = material.cable!.packaging[s.id];
+      if (packaging && packaging.lot_metres !== null) {
+        const { totalPrice } = calcCablePurchase({
+          neededMetres: packaging.lot_metres,
+          packaging,
+          unitPrice: rawPrice,
+        });
+        comparePrice = totalPrice ?? rawPrice;
       }
-      return { id: s.id, price: comparePrice };
-    })
-    .filter((s): s is { id: string; price: number } => s !== null);
+    }
+    return { id: s.id, price: comparePrice };
+  }).filter((s): s is { id: string; price: number } => s !== null);
 
   if (available.length < 2) return result;
 
@@ -112,7 +110,8 @@ export function PriceTable({
     return map;
   }, [filteredMaterials]);
 
-  const allCollapsed = groups.size > 0 && Array.from(groups.keys()).every((k) => collapsedCategories.has(k));
+  const allCollapsed =
+    groups.size > 0 && Array.from(groups.keys()).every((k) => collapsedCategories.has(k));
 
   const toggleAll = () => {
     onToggleAllCategories(Array.from(groups.keys()), !allCollapsed);
@@ -125,7 +124,8 @@ export function PriceTable({
     .sort()
     .at(-1);
 
-  const allSelected = filteredMaterials.length > 0 && filteredMaterials.every((m) => selectedIds.has(m.id));
+  const allSelected =
+    filteredMaterials.length > 0 && filteredMaterials.every((m) => selectedIds.has(m.id));
   const someSelected = !allSelected && filteredMaterials.some((m) => selectedIds.has(m.id));
   const selectedCount = materials.filter((m) => selectedIds.has(m.id)).length;
 
@@ -141,10 +141,16 @@ export function PriceTable({
         <div>
           <h2 className="text-sm font-semibold text-gray-900">
             Catalogue —{' '}
-            {isFiltering
-              ? <><span className="text-orange-600">{filteredMaterials.length}</span> / {materials.length} article{materials.length > 1 ? 's' : ''}</>
-              : <>{materials.length} article{materials.length > 1 ? 's' : ''}</>
-            }
+            {isFiltering ? (
+              <>
+                <span className="text-orange-600">{filteredMaterials.length}</span> /{' '}
+                {materials.length} article{materials.length > 1 ? 's' : ''}
+              </>
+            ) : (
+              <>
+                {materials.length} article{materials.length > 1 ? 's' : ''}
+              </>
+            )}
             {selectedCount > 0 && (
               <span
                 data-testid="selection-badge"
@@ -157,7 +163,10 @@ export function PriceTable({
           {lastUpdated && (
             <p className="text-xs text-gray-400 mt-0.5">
               ⏱ Prix mis à jour à{' '}
-              {new Date(lastUpdated).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              {new Date(lastUpdated).toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </p>
           )}
         </div>
@@ -165,7 +174,9 @@ export function PriceTable({
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search filter */}
           <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔎</span>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">
+              🔎
+            </span>
             <input
               type="search"
               value={searchQuery}
@@ -212,9 +223,11 @@ export function PriceTable({
             disabled={scanning || selectedCount === 0}
             title={selectedCount === 0 ? 'Cochez des articles pour lancer le scan' : undefined}
             aria-label={
-              scanning ? 'Scan en cours'
-              : selectedCount > 0 ? `Actualiser les prix (${selectedCount} article${selectedCount > 1 ? 's' : ''})`
-              : 'Sélectionnez des articles pour scanner'
+              scanning
+                ? 'Scan en cours'
+                : selectedCount > 0
+                  ? `Actualiser les prix (${selectedCount} article${selectedCount > 1 ? 's' : ''})`
+                  : 'Sélectionnez des articles pour scanner'
             }
             className={[
               'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
@@ -227,7 +240,10 @@ export function PriceTable({
             {scanning ? (
               <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full" />
             ) : selectedCount > 0 ? (
-              <><span>🔍</span><span>{selectedCount}</span></>
+              <>
+                <span>🔍</span>
+                <span>{selectedCount}</span>
+              </>
             ) : (
               <span>🔍</span>
             )}
@@ -243,7 +259,9 @@ export function PriceTable({
       ) : filteredMaterials.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-sm">
           <p className="text-2xl mb-3">🔎</p>
-          <p>Aucun résultat pour <strong className="text-gray-600">« {searchQuery} »</strong></p>
+          <p>
+            Aucun résultat pour <strong className="text-gray-600">« {searchQuery} »</strong>
+          </p>
           <button
             onClick={() => setSearchQuery('')}
             className="mt-3 text-xs text-orange-500 hover:underline"
@@ -261,8 +279,15 @@ export function PriceTable({
                   <input
                     type="checkbox"
                     checked={allSelected}
-                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
-                    onChange={(e) => onToggleSelectAll(filteredMaterials.map((m) => m.id), e.target.checked)}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected;
+                    }}
+                    onChange={(e) =>
+                      onToggleSelectAll(
+                        filteredMaterials.map((m) => m.id),
+                        e.target.checked
+                      )
+                    }
                     className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
                     title="Tout sélectionner"
                     aria-label="Tout sélectionner"
@@ -300,7 +325,9 @@ export function PriceTable({
                         <input
                           type="checkbox"
                           checked={allCatSelected}
-                          ref={(el) => { if (el) el.indeterminate = someCatSelected; }}
+                          ref={(el) => {
+                            if (el) el.indeterminate = someCatSelected;
+                          }}
                           onChange={(e) => onToggleSelectAll(catIds, e.target.checked)}
                           className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
                           title={`Sélectionner tous les articles de la catégorie ${categorie}`}
@@ -317,7 +344,11 @@ export function PriceTable({
                         <div className="flex items-center gap-2">
                           <span
                             className="text-xs text-gray-400"
-                            style={{ display: 'inline-block', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 150ms' }}
+                            style={{
+                              display: 'inline-block',
+                              transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                              transition: 'transform 150ms',
+                            }}
                           >
                             ▾
                           </span>
@@ -332,55 +363,60 @@ export function PriceTable({
                     </tr>
 
                     {/* ── Material rows ── */}
-                    {!isCollapsed && items.map((material, idx) => {
-                      const isSelected = selectedIds.has(material.id);
-                      const comparison = computeRowComparison(material, prices);
-                      return (
-                        <tr
-                          key={material.id}
-                          className={[
-                            'border-b border-gray-50 transition-colors group',
-                            isSelected ? 'bg-orange-50/60' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
-                            'hover:bg-orange-50/40',
-                          ].join(' ')}
-                        >
-                          <td className="px-4 py-3.5">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => onToggleSelect(material.id)}
-                              className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
-                              aria-label={`Sélectionner ${material.nom}`}
-                            />
-                          </td>
-                          <td className="px-5 py-3.5">
-                            <div className="font-medium text-gray-800">{material.nom}</div>
-                            <div className="text-xs text-gray-400 mt-0.5">{material.marque}</div>
-                          </td>
-                          {SUPPLIERS.map((s) => (
-                            <td key={s.id} className="px-4 py-3.5 text-right">
-                              <PriceCellDisplay
-                                cell={prices[material.id]?.[s.id]}
-                                isBest={comparison.get(s.id)?.isBest}
-                                diffFromBest={comparison.get(s.id)?.diffFromBest}
-                                material={material}
-                                supplierId={s.id}
+                    {!isCollapsed &&
+                      items.map((material, idx) => {
+                        const isSelected = selectedIds.has(material.id);
+                        const comparison = computeRowComparison(material, prices);
+                        return (
+                          <tr
+                            key={material.id}
+                            className={[
+                              'border-b border-gray-50 transition-colors group',
+                              isSelected
+                                ? 'bg-orange-50/60'
+                                : idx % 2 === 0
+                                  ? 'bg-white'
+                                  : 'bg-gray-50/40',
+                              'hover:bg-orange-50/40',
+                            ].join(' ')}
+                          >
+                            <td className="px-4 py-3.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => onToggleSelect(material.id)}
+                                className="w-4 h-4 rounded accent-orange-500 cursor-pointer"
+                                aria-label={`Sélectionner ${material.nom}`}
                               />
                             </td>
-                          ))}
-                          <td className="px-3 py-3.5 text-right">
-                            <button
-                              onClick={() => onEdit(material)}
-                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-orange-500 transition-opacity focus:opacity-100 p-1 rounded"
-                              title="Modifier cet article"
-                              aria-label={`Modifier ${material.nom}`}
-                            >
-                              ✏️
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            <td className="px-5 py-3.5">
+                              <div className="font-medium text-gray-800">{material.nom}</div>
+                              <div className="text-xs text-gray-400 mt-0.5">{material.marque}</div>
+                            </td>
+                            {SUPPLIERS.map((s) => (
+                              <td key={s.id} className="px-4 py-3.5 text-right">
+                                <PriceCellDisplay
+                                  cell={prices[material.id]?.[s.id]}
+                                  isBest={comparison.get(s.id)?.isBest}
+                                  diffFromBest={comparison.get(s.id)?.diffFromBest}
+                                  material={material}
+                                  supplierId={s.id}
+                                />
+                              </td>
+                            ))}
+                            <td className="px-3 py-3.5 text-right">
+                              <button
+                                onClick={() => onEdit(material)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-orange-500 transition-opacity focus:opacity-100 p-1 rounded"
+                                title="Modifier cet article"
+                                aria-label={`Modifier ${material.nom}`}
+                              >
+                                ✏️
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </React.Fragment>
                 );
               })}
@@ -391,4 +427,3 @@ export function PriceTable({
     </div>
   );
 }
-

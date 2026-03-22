@@ -25,12 +25,17 @@ function isValidSession(cookies: string): boolean {
 }
 
 export function BricodepotLoginModal({
-  currentCookies, onSave, onClear, onClose,
+  currentCookies,
+  onSave,
+  onClear,
+  onClose,
 }: BricodepotLoginModalProps): React.ReactElement {
   const [draft, setDraft] = useState(currentCookies);
 
   useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
@@ -48,10 +53,11 @@ export function BricodepotLoginModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -63,24 +69,36 @@ export function BricodepotLoginModal({
               </span>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            ×
+          </button>
         </div>
 
         {/* Instructions */}
         <div className="px-6 pt-5 pb-0">
           <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 text-xs text-blue-700 space-y-1">
-            <p className="font-semibold text-blue-800 text-sm">Comment obtenir les cookies de session :</p>
+            <p className="font-semibold text-blue-800 text-sm">
+              Comment obtenir les cookies de session :
+            </p>
             <ol className="list-decimal list-inside space-y-0.5">
-              <li>Ouvrez <strong>bricodepot.fr</strong> dans votre navigateur</li>
+              <li>
+                Ouvrez <strong>bricodepot.fr</strong> dans votre navigateur
+              </li>
               <li>Naviguez vers n'importe quelle fiche produit</li>
               <li>F12 → Réseau → cliquez sur la requête de la page produit</li>
-              <li>En-têtes de requête → copiez la valeur de <code className="bg-blue-100 px-0.5 rounded">Cookie</code></li>
+              <li>
+                En-têtes de requête → copiez la valeur de{' '}
+                <code className="bg-blue-100 px-0.5 rounded">Cookie</code>
+              </li>
               <li>Collez-la ci-dessous</li>
             </ol>
             <p className="text-blue-600 pt-0.5">
-              Les cookies requis sont <code className="bg-blue-100 px-0.5 rounded">JSESSIONID</code> et{' '}
-              <code className="bg-blue-100 px-0.5 rounded">DYN_USER_ID</code>.
-              La session dure plusieurs heures.
+              Les cookies requis sont <code className="bg-blue-100 px-0.5 rounded">JSESSIONID</code>{' '}
+              et <code className="bg-blue-100 px-0.5 rounded">DYN_USER_ID</code>. La session dure
+              plusieurs heures.
             </p>
           </div>
         </div>
@@ -101,7 +119,9 @@ export function BricodepotLoginModal({
               spellCheck={false}
             />
             {draft.trim().length > 0 && (
-              <p className={`mt-1 text-xs font-medium ${draftValid ? 'text-green-600' : 'text-orange-500'}`}>
+              <p
+                className={`mt-1 text-xs font-medium ${draftValid ? 'text-green-600' : 'text-orange-500'}`}
+              >
                 {draftValid
                   ? '✓ JSESSIONID et DYN_USER_ID détectés'
                   : '⚠ JSESSIONID ou DYN_USER_ID manquant — vérifiez la valeur copiée'}
@@ -113,7 +133,10 @@ export function BricodepotLoginModal({
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
           <button
-            onClick={() => { onClear(); onClose(); }}
+            onClick={() => {
+              onClear();
+              onClose();
+            }}
             className="text-sm font-medium text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
             disabled={!isConnected}
           >
@@ -140,4 +163,3 @@ export function BricodepotLoginModal({
     </div>
   );
 }
-

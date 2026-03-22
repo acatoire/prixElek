@@ -28,4 +28,3 @@ export interface Supplier {
 export interface SupplierConfig {
   fournisseurs: Supplier[];
 }
-

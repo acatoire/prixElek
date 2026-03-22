@@ -7,7 +7,10 @@ import { BricodepotLoginModal } from './BricodepotLoginModal';
 
 const VALID_COOKIES = 'JSESSIONID=abc; DYN_USER_ID=xyz; other=val';
 const EMPTY_PROPS = {
-  currentCookies: '', onSave: vi.fn(), onClear: vi.fn(), onClose: vi.fn(),
+  currentCookies: '',
+  onSave: vi.fn(),
+  onClear: vi.fn(),
+  onClose: vi.fn(),
 };
 
 describe('BricodepotLoginModal', () => {
@@ -70,10 +73,16 @@ describe('BricodepotLoginModal', () => {
   it('calls onClear and onClose when Effacer is clicked', () => {
     const onClear = vi.fn();
     const onClose = vi.fn();
-    render(<BricodepotLoginModal {...EMPTY_PROPS} currentCookies={VALID_COOKIES} onClear={onClear} onClose={onClose} />);
+    render(
+      <BricodepotLoginModal
+        {...EMPTY_PROPS}
+        currentCookies={VALID_COOKIES}
+        onClear={onClear}
+        onClose={onClose}
+      />
+    );
     fireEvent.click(screen.getByText(/Effacer la session/));
     expect(onClear).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
-

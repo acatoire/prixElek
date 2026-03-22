@@ -14,17 +14,26 @@ import type { Material } from '@/types/material';
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const MAT_A: Material & { _sourceFile?: string } = {
-  id: 'mat-a', nom: 'Item A', marque: 'Brand', categorie: 'Cat',
+  id: 'mat-a',
+  nom: 'Item A',
+  marque: 'Brand',
+  categorie: 'Cat',
   references_fournisseurs: { materielelectrique: 'REF-A' },
   _sourceFile: 'catalogue.prises',
 };
 const MAT_B: Material & { _sourceFile?: string } = {
-  id: 'mat-b', nom: 'Item B', marque: 'Brand', categorie: 'Cat',
+  id: 'mat-b',
+  nom: 'Item B',
+  marque: 'Brand',
+  categorie: 'Cat',
   references_fournisseurs: { materielelectrique: 'REF-B' },
   _sourceFile: 'catalogue.cables',
 };
 const MAT_NO_SOURCE: Material & { _sourceFile?: string } = {
-  id: 'mat-c', nom: 'Item C', marque: 'Brand', categorie: 'Cat',
+  id: 'mat-c',
+  nom: 'Item C',
+  marque: 'Brand',
+  categorie: 'Cat',
   references_fournisseurs: {},
 };
 
@@ -64,7 +73,10 @@ describe('exportCatalogueAsZip', () => {
 
     // Minimal Blob stub — just needs to be constructable.
     globalThis.Blob = class {
-      constructor(public parts: unknown[], public options?: unknown) {}
+      constructor(
+        public parts: unknown[],
+        public options?: unknown
+      ) {}
     } as unknown as typeof Blob;
   });
 
@@ -156,4 +168,3 @@ describe('importCatalogueFromJson', () => {
     expect(() => importCatalogueFromJson(toBuffer({ not: 'array' }))).toThrow(/tableau/);
   });
 });
-

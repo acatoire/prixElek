@@ -56,7 +56,7 @@ interface UsePriceScanReturn {
     materials: Material[],
     rexelCreds?: RexelCredentials,
     selectedIds?: Set<string>,
-    bricodepotCookies?: string,
+    bricodepotCookies?: string
   ) => Promise<void>;
   stopScan: () => void;
 }
@@ -76,23 +76,26 @@ export function usePriceScan(): UsePriceScanReturn {
     });
   }, []);
 
-  const stopScan = useCallback(() => { abortRef.current = true; }, []);
+  const stopScan = useCallback(() => {
+    abortRef.current = true;
+  }, []);
 
   const startScan = useCallback(
     async (
       materials: Material[],
       rexelCreds?: RexelCredentials,
       selectedIds?: Set<string>,
-      bricodepotCookies?: string,
+      bricodepotCookies?: string
     ) => {
       if (scanning) return;
       abortRef.current = false;
       setScanning(true);
 
       // Only scan selected items; if nothing selected, scan all
-      const targets = (selectedIds && selectedIds.size > 0)
-        ? materials.filter((m) => selectedIds.has(m.id))
-        : materials;
+      const targets =
+        selectedIds && selectedIds.size > 0
+          ? materials.filter((m) => selectedIds.has(m.id))
+          : materials;
 
       // Snapshot prices at scan-start to evaluate freshness
       const snapshot = pricesRef.current;
@@ -124,7 +127,10 @@ export function usePriceScan(): UsePriceScanReturn {
             for (const m of targets) {
               for (const s of SUPPLIERS) {
                 if (next[m.id]?.[s.id]?.status === 'loading') {
-                  next[m.id] = { ...next[m.id], [s.id]: { status: 'idle', data: null, errorMessage: null } };
+                  next[m.id] = {
+                    ...next[m.id],
+                    [s.id]: { status: 'idle', data: null, errorMessage: null },
+                  };
                 }
               }
             }
@@ -141,7 +147,11 @@ export function usePriceScan(): UsePriceScanReturn {
 
           const ref = material.references_fournisseurs[s.id];
           if (!ref) {
-            setCell(material.id, s.id, { status: 'error', data: null, errorMessage: 'Référence non renseignée' });
+            setCell(material.id, s.id, {
+              status: 'error',
+              data: null,
+              errorMessage: 'Référence non renseignée',
+            });
             return;
           }
 
@@ -152,7 +162,11 @@ export function usePriceScan(): UsePriceScanReturn {
               price = await meAdapter.getPrice(material.id, ref);
             } else if (s.id === 'rexel') {
               if (!rexelAdapter) {
-                setCell(material.id, s.id, { status: 'error', data: null, errorMessage: 'Non connecté à Rexel' });
+                setCell(material.id, s.id, {
+                  status: 'error',
+                  data: null,
+                  errorMessage: 'Non connecté à Rexel',
+                });
                 return;
               }
               price = await rexelAdapter.getPrice(ref);
@@ -179,4 +193,3 @@ export function usePriceScan(): UsePriceScanReturn {
 
   return { prices, scanning, startScan, stopScan };
 }
-

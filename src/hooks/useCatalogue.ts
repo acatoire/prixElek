@@ -42,8 +42,8 @@ export interface UseCatalogueReturn {
 }
 
 export function useCatalogue(): UseCatalogueReturn {
-  const [materialsWithSource, setMaterialsWithSource] = useState<MaterialWithSource[]>(
-    () => loadAllMaterialsWithSource()
+  const [materialsWithSource, setMaterialsWithSource] = useState<MaterialWithSource[]>(() =>
+    loadAllMaterialsWithSource()
   );
   const [lastModifiedAt, setLastModifiedAt] = useState<number | null>(null);
   const [lastExportedAt, setLastExportedAt] = useState<number | null>(null);
@@ -80,8 +80,7 @@ export function useCatalogue(): UseCatalogueReturn {
       if (prev.some((m) => m.id === item.id)) return prev;
       added = true;
       const stem =
-        targetFile ??
-        `catalogue.${slugify(item.categorie || item.nom).slice(0, 40) || 'divers'}`;
+        targetFile ?? `catalogue.${slugify(item.categorie || item.nom).slice(0, 40) || 'divers'}`;
       return [...prev, { ...item, _sourceFile: stem }];
     });
     if (added) setLastModifiedAt(Date.now());

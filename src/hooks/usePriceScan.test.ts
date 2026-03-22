@@ -21,7 +21,9 @@ vi.mock('@/adapters/rexel', () => ({
 }));
 
 vi.mock('@/adapters/bricodepot', () => ({
-  BricodepotAdapter: vi.fn().mockImplementation(() => ({ getPrice: vi.fn().mockResolvedValue(null) })),
+  BricodepotAdapter: vi
+    .fn()
+    .mockImplementation(() => ({ getPrice: vi.fn().mockResolvedValue(null) })),
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -55,9 +57,8 @@ const MOCK_PRICE: SupplierPrice = {
   stock: 1,
   unite: 'pièce',
   fetchedAt: new Date().toISOString(), // fresh — now
-  tiers: [],  // [] = fetched with tier-aware code, product has no tiers
+  tiers: [], // [] = fetched with tier-aware code, product has no tiers
 };
-
 
 // ── buildIdleMatrix ───────────────────────────────────────────────────────────
 
@@ -76,7 +77,9 @@ describe('buildIdleMatrix', () => {
 // ── usePriceScan ──────────────────────────────────────────────────────────────
 
 describe('usePriceScan', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('starts with empty prices and scanning=false', () => {
     const { result } = renderHook(() => usePriceScan());
@@ -88,7 +91,9 @@ describe('usePriceScan', () => {
     mockGetPrice.mockResolvedValue(MOCK_PRICE);
     const { result } = renderHook(() => usePriceScan());
 
-    await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF]);
+    });
 
     expect(result.current.scanning).toBe(false);
     expect(result.current.prices['mat-1']['materielelectrique'].status).toBe('success');
@@ -99,7 +104,9 @@ describe('usePriceScan', () => {
     mockGetPrice.mockRejectedValue(new Error('Network fail'));
     const { result } = renderHook(() => usePriceScan());
 
-    await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF]);
+    });
 
     const cell = result.current.prices['mat-1']['materielelectrique'];
     expect(cell.status).toBe('error');
@@ -109,7 +116,9 @@ describe('usePriceScan', () => {
   it('sets cell to error when reference is null', async () => {
     const { result } = renderHook(() => usePriceScan());
 
-    await act(async () => { await result.current.startScan([MATERIAL_NO_REF]); });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_NO_REF]);
+    });
 
     const cell = result.current.prices['mat-2']['materielelectrique'];
     expect(cell.status).toBe('error');
@@ -119,17 +128,25 @@ describe('usePriceScan', () => {
   it('does not start a second scan while one is running', async () => {
     let resolveFirst!: () => void;
     mockGetPrice.mockReturnValue(
-      new Promise<SupplierPrice>((resolve) => { resolveFirst = () => resolve(MOCK_PRICE); })
+      new Promise<SupplierPrice>((resolve) => {
+        resolveFirst = () => resolve(MOCK_PRICE);
+      })
     );
 
     const { result } = renderHook(() => usePriceScan());
 
-    act(() => { void result.current.startScan([MATERIAL_WITH_REF]); });
-    await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+    act(() => {
+      void result.current.startScan([MATERIAL_WITH_REF]);
+    });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF]);
+    });
 
     // Only one getPrice call should have been made
     expect(mockGetPrice).toHaveBeenCalledTimes(1);
-    await act(async () => { resolveFirst(); });
+    await act(async () => {
+      resolveFirst();
+    });
   });
 
   it('only fetches the selected materials when selectedIds is provided', async () => {
@@ -157,12 +174,16 @@ describe('usePriceScan', () => {
     const { result } = renderHook(() => usePriceScan());
 
     // First scan — populates with a fresh price
-    await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF]);
+    });
     expect(mockGetPrice).toHaveBeenCalledTimes(1);
 
     // Second scan immediately after — price is still fresh, should be skipped
     mockGetPrice.mockClear();
-    await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF]);
+    });
     expect(mockGetPrice).toHaveBeenCalledTimes(0);
   });
 
@@ -170,7 +191,9 @@ describe('usePriceScan', () => {
     let resolveFirst!: (v: SupplierPrice) => void;
     // First material hangs so we can call stopScan before it finishes
     mockGetPrice.mockReturnValueOnce(
-      new Promise<SupplierPrice>((resolve) => { resolveFirst = resolve; })
+      new Promise<SupplierPrice>((resolve) => {
+        resolveFirst = resolve;
+      })
     );
     // Second material would resolve instantly (but should be cancelled)
     mockGetPrice.mockResolvedValue(MOCK_PRICE);
@@ -183,7 +206,9 @@ describe('usePriceScan', () => {
     });
 
     // Abort immediately
-    act(() => { result.current.stopScan(); });
+    act(() => {
+      result.current.stopScan();
+    });
     resolveFirst(MOCK_PRICE);
     await scanPromise;
 
@@ -207,10 +232,12 @@ describe('usePriceScan', () => {
 
     const { result } = renderHook(() => usePriceScan());
     await act(async () => {
-      await result.current.startScan(
-        [rexelMaterial],
-        { token: 'tok', branchId: '4413', zipcode: '44880', city: 'SAUTRON' }
-      );
+      await result.current.startScan([rexelMaterial], {
+        token: 'tok',
+        branchId: '4413',
+        zipcode: '44880',
+        city: 'SAUTRON',
+      });
     });
 
     expect(mockRexelGetPrice).toHaveBeenCalledWith('REXEL-SKU');
@@ -228,7 +255,7 @@ describe('usePriceScan', () => {
 
     const { result } = renderHook(() => usePriceScan());
     await act(async () => {
-      await result.current.startScan([rexelMaterial]);  // no rexelCreds
+      await result.current.startScan([rexelMaterial]); // no rexelCreds
     });
 
     expect(result.current.prices['rexel-mat']['rexel'].status).toBe('error');
@@ -239,12 +266,16 @@ describe('usePriceScan', () => {
     // First scan stores a fresh price
     mockGetPrice.mockResolvedValue(MOCK_PRICE);
     const { result } = renderHook(() => usePriceScan());
-    await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF]);
+    });
     expect(mockGetPrice).toHaveBeenCalledTimes(1);
 
     // Confirm second scan (fresh) is skipped
     mockGetPrice.mockClear();
-    await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+    await act(async () => {
+      await result.current.startScan([MATERIAL_WITH_REF]);
+    });
     expect(mockGetPrice).toHaveBeenCalledTimes(0);
 
     // Fast-forward time by 25 h so the cached price becomes stale
@@ -254,7 +285,9 @@ describe('usePriceScan', () => {
     try {
       mockGetPrice.mockClear();
       mockGetPrice.mockResolvedValue({ ...MOCK_PRICE, fetchedAt: new Date().toISOString() });
-      await act(async () => { await result.current.startScan([MATERIAL_WITH_REF]); });
+      await act(async () => {
+        await result.current.startScan([MATERIAL_WITH_REF]);
+      });
       expect(mockGetPrice).toHaveBeenCalledTimes(1);
     } finally {
       vi.spyOn(Date, 'now').mockRestore();

@@ -26,9 +26,8 @@ export function decodeRexelToken(jwt: string): RexelJwtPayload {
     const pad = (4 - (seg.length % 4)) % 4;
     const b64 = (seg + '='.repeat(pad)).replace(/-/g, '+').replace(/_/g, '/');
     // Works in both browser (atob) and Node (Buffer)
-    const json = typeof Buffer !== 'undefined'
-      ? Buffer.from(b64, 'base64').toString('utf-8')
-      : atob(b64);
+    const json =
+      typeof Buffer !== 'undefined' ? Buffer.from(b64, 'base64').toString('utf-8') : atob(b64);
     return JSON.parse(json) as RexelJwtPayload;
   } catch {
     return {};
@@ -250,9 +249,10 @@ export class RexelAdapter extends SupplierAdapter {
       });
     }
 
-    const hasStock = line.availabilities?.some(
-      (a) => a.type === 'DELIVERY_BRANCH_AVAILABILITY' && (a.quantity?.available ?? 0) > 0
-    ) ?? false;
+    const hasStock =
+      line.availabilities?.some(
+        (a) => a.type === 'DELIVERY_BRANCH_AVAILABILITY' && (a.quantity?.available ?? 0) > 0
+      ) ?? false;
 
     return {
       prix_ht: unitPrice.price.amount,
@@ -262,4 +262,3 @@ export class RexelAdapter extends SupplierAdapter {
     };
   }
 }
-

@@ -88,9 +88,7 @@ export interface CableSupplierResult extends CableCalcResult {
 export function compareCableSuppliers(
   results: Array<{ supplierId: string } & CableCalcResult>
 ): CableSupplierResult[] {
-  const prices = results
-    .map((r) => r.totalPrice)
-    .filter((p): p is number => p !== null);
+  const prices = results.map((r) => r.totalPrice).filter((p): p is number => p !== null);
 
   if (prices.length < 2) {
     return results.map((r) => ({ ...r, isBest: false, diffFromBest: undefined }));
@@ -107,4 +105,3 @@ export function compareCableSuppliers(
     };
   });
 }
-

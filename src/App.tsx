@@ -63,14 +63,20 @@ export function App(): React.ReactElement {
   }, []);
 
   const handleScan = useCallback(
-    () => startScan(
-      materials,
-      rexelAuth.isConnected
-        ? { token: rexelAuth.token, branchId: rexelAuth.branchId, zipcode: rexelAuth.zipcode, city: rexelAuth.city }
-        : undefined,
-      selectedIds.size > 0 ? selectedIds : undefined,
-      bricodepotAuth.cookies || undefined,
-    ),
+    () =>
+      startScan(
+        materials,
+        rexelAuth.isConnected
+          ? {
+              token: rexelAuth.token,
+              branchId: rexelAuth.branchId,
+              zipcode: rexelAuth.zipcode,
+              city: rexelAuth.city,
+            }
+          : undefined,
+        selectedIds.size > 0 ? selectedIds : undefined,
+        bricodepotAuth.cookies || undefined
+      ),
     [startScan, materials, rexelAuth, selectedIds, bricodepotAuth.cookies]
   );
 
@@ -96,13 +102,17 @@ export function App(): React.ReactElement {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Header — pale green in dev to distinguish from production ── */}
-      <header className={`${import.meta.env.DEV ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'} border-b px-6 py-4`}>
+      <header
+        className={`${import.meta.env.DEV ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'} border-b px-6 py-4`}
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚡</span>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">prixElek</h1>
-              <p className={`text-sm ${import.meta.env.DEV ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
+              <p
+                className={`text-sm ${import.meta.env.DEV ? 'text-green-700 font-medium' : 'text-gray-500'}`}
+              >
                 {import.meta.env.DEV ? '⚠ DEV — localhost' : 'Comparateur de prix fournisseurs'}
               </p>
             </div>
@@ -178,7 +188,8 @@ export function App(): React.ReactElement {
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <span className="text-sm text-amber-800">
-              💾 Le catalogue a été modifié — pensez à l'exporter pour ne pas perdre vos changements.
+              💾 Le catalogue a été modifié — pensez à l'exporter pour ne pas perdre vos
+              changements.
             </span>
             <div className="flex items-center gap-2 shrink-0">
               <button
@@ -219,7 +230,14 @@ export function App(): React.ReactElement {
           />
         )}
         {activeTab === 'commande' && (
-          <CommandeTab materials={materials} prices={prices} commande={commande} scanning={scanning} onScan={handleScan} onStop={stopScan} />
+          <CommandeTab
+            materials={materials}
+            prices={prices}
+            commande={commande}
+            scanning={scanning}
+            onScan={handleScan}
+            onStop={stopScan}
+          />
         )}
       </main>
 

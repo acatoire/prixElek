@@ -8,24 +8,24 @@
  * - Export-as-email button per supplier column
  * - Save order / load order buttons
  */
-import React, {useRef, useCallback, useState, useMemo} from 'react';
-import type {Material} from '@/types/material';
-import {isCableMaterial} from '@/types/material';
-import type {PriceMatrix} from '@/types/price';
-import type {UseCommandeReturn} from '@/hooks/useCommande';
-import {SUPPLIERS} from '@/config/suppliers';
-import {calcCablePurchase, compareCableSuppliers} from '@/services/CableCalculator';
-import {bestTierForQty} from '@/services/extractProduct';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
+import type { Material } from '@/types/material';
+import { isCableMaterial } from '@/types/material';
+import type { PriceMatrix } from '@/types/price';
+import type { UseCommandeReturn } from '@/hooks/useCommande';
+import { SUPPLIERS } from '@/config/suppliers';
+import { calcCablePurchase, compareCableSuppliers } from '@/services/CableCalculator';
+import { bestTierForQty } from '@/services/extractProduct';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(value: number): string {
-  return value.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'});
+  return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 }
 
 /** Formats a positive diff for totals: 3.5 → "+3,50 €" */
 function fmtDiff(value: number): string {
-  return '+' + value.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'});
+  return '+' + value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 }
 
 /**
@@ -40,7 +40,10 @@ function computeComparison(
   const best = Math.min(...supplierPrices.values());
   for (const [id, price] of supplierPrices) {
     const isBest = price === best;
-    result.set(id, {isBest, diffFromBest: isBest ? undefined : Math.round((price - best) * 100) / 100});
+    result.set(id, {
+      isBest,
+      diffFromBest: isBest ? undefined : Math.round((price - best) * 100) / 100,
+    });
   }
   return result;
 }
@@ -81,7 +84,11 @@ function buildEmailBody(
     if (isCableMaterial(i.material)) {
       const packaging = i.material.cable!.packaging[supplierId];
       if (!packaging) return acc;
-      const { totalPrice } = calcCablePurchase({ neededMetres: i.quantity, packaging, unitPrice: i.prix_ht });
+      const { totalPrice } = calcCablePurchase({
+        neededMetres: i.quantity,
+        packaging,
+        unitPrice: i.prix_ht,
+      });
       return totalPrice !== null ? acc + totalPrice : acc;
     }
     return acc + i.prix_ht * i.quantity;
@@ -110,14 +117,14 @@ interface CommandeTabProps {
 }
 
 export function CommandeTab({
-                              materials,
-                              prices,
-                              commande,
-                              scanning,
-                              onScan,
-                              onStop
-                            }: CommandeTabProps): React.ReactElement {
-  const {selectedIds, quantities, setQuantity, removeItem, exportOrder, importOrder} = commande;
+  materials,
+  prices,
+  commande,
+  scanning,
+  onScan,
+  onStop,
+}: CommandeTabProps): React.ReactElement {
+  const { selectedIds, quantities, setQuantity, removeItem, exportOrder, importOrder } = commande;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Set of collapsed category names (all expanded by default)
@@ -170,19 +177,24 @@ export function CommandeTab({
           const packaging = m.cable!.packaging[s.id];
           if (!packaging) return acc;
           const qty = Math.max(1, quantities[m.id] ?? 1);
-          const { totalPrice } = calcCablePurchase({ neededMetres: qty, packaging, unitPrice: basePrice });
+          const { totalPrice } = calcCablePurchase({
+            neededMetres: qty,
+            packaging,
+            unitPrice: basePrice,
+          });
           return totalPrice !== null ? acc + totalPrice : acc;
         }
         const qty = quantities[m.id] ?? 1;
         // Apply best tier for this quantity if tiers exist and are non-empty
         const tiers = cell?.data?.tiers;
-        const unitPrice = (tiers && tiers.length > 0) ? bestTierForQty(tiers, qty).prix_ht : basePrice;
+        const unitPrice =
+          tiers && tiers.length > 0 ? bestTierForQty(tiers, qty).prix_ht : basePrice;
         return acc + unitPrice * qty;
       }, 0);
       const hasAllPrices = selectedMaterials.every(
         (m) => prices[m.id]?.[s.id]?.status === 'success'
       );
-      return [s.id, {total, hasAllPrices}];
+      return [s.id, { total, hasAllPrices }];
     })
   );
 
@@ -195,7 +207,7 @@ export function CommandeTab({
         prix_ht: prices[m.id]?.[supplierId]?.data?.prix_ht ?? null,
       }));
       const body = buildEmailBody(supplierId, supplierLabel, items);
-      const blob = new Blob([body], {type: 'text/plain;charset=utf-8'});
+      const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -241,7 +253,9 @@ export function CommandeTab({
           bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
           focus:outline-none focus:ring-2 focus:ring-gray-400"
         title="Charger une commande sauvegardée"
-      > 📂
+      >
+        {' '}
+        📂
       </button>
     </>
   );
@@ -288,7 +302,9 @@ export function CommandeTab({
               bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors
               focus:outline-none focus:ring-2 focus:ring-gray-400"
             title="Sauvegarder la commande pour la réimporter plus tard"
-          > 💾
+          >
+            {' '}
+            💾
           </button>
           {/* Scan buttons */}
           {scanning && (
@@ -327,346 +343,412 @@ export function CommandeTab({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
-            <th className="text-left px-5 py-3 font-medium text-gray-500">Matériel</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Quantité</th>
-            {SUPPLIERS.map((s) => (
-              <th
-                key={s.id}
-                className="text-right px-5 py-3 font-medium text-gray-500 min-w-[160px]"
-                style={{borderTop: `3px solid ${s.color}`}}
-              >
-                {s.label}
-              </th>
-            ))}
-            <th className="px-3 py-3 w-10"/>
-          </tr>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="text-left px-5 py-3 font-medium text-gray-500">Matériel</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Quantité</th>
+              {SUPPLIERS.map((s) => (
+                <th
+                  key={s.id}
+                  className="text-right px-5 py-3 font-medium text-gray-500 min-w-[160px]"
+                  style={{ borderTop: `3px solid ${s.color}` }}
+                >
+                  {s.label}
+                </th>
+              ))}
+              <th className="px-3 py-3 w-10" />
+            </tr>
           </thead>
           <tbody>
-          {Array.from(groups.entries()).map(([categorie, items]) => {
-            const isCollapsed = collapsedCategories.has(categorie);
-            return (
-              <React.Fragment key={categorie}>
-                {/* ── Category header row ── */}
-                <tr className="bg-gray-100 border-y border-gray-200">
-                  <td
-                    colSpan={colSpan}
-                    className="py-2 px-5 cursor-pointer select-none"
-                    onClick={() => toggleCategory(categorie)}
-                    aria-label={`${isCollapsed ? 'Déplier' : 'Replier'} la catégorie ${categorie}`}
-                  >
-                    <div className="flex items-center gap-2">
+            {Array.from(groups.entries()).map(([categorie, items]) => {
+              const isCollapsed = collapsedCategories.has(categorie);
+              return (
+                <React.Fragment key={categorie}>
+                  {/* ── Category header row ── */}
+                  <tr className="bg-gray-100 border-y border-gray-200">
+                    <td
+                      colSpan={colSpan}
+                      className="py-2 px-5 cursor-pointer select-none"
+                      onClick={() => toggleCategory(categorie)}
+                      aria-label={`${isCollapsed ? 'Déplier' : 'Replier'} la catégorie ${categorie}`}
+                    >
+                      <div className="flex items-center gap-2">
                         <span
                           className="text-xs text-gray-400 transition-transform duration-150"
-                          style={{display: 'inline-block', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}}
+                          style={{
+                            display: 'inline-block',
+                            transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                          }}
                         >
                           ▾
                         </span>
-                      <span className="font-semibold text-gray-700 text-xs uppercase tracking-wide">
+                        <span className="font-semibold text-gray-700 text-xs uppercase tracking-wide">
                           {categorie}
                         </span>
-                      <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400">
                           {items.length} article{items.length > 1 ? 's' : ''}
                         </span>
-                    </div>
-                  </td>
-                </tr>
+                      </div>
+                    </td>
+                  </tr>
 
-                {/* ── Material rows (hidden when collapsed) ── */}
-                {!isCollapsed && items.map((material, idx) => {
-                  const qty = quantities[material.id] ?? 1;
-                  const isCable = isCableMaterial(material);
+                  {/* ── Material rows (hidden when collapsed) ── */}
+                  {!isCollapsed &&
+                    items.map((material, idx) => {
+                      const qty = quantities[material.id] ?? 1;
+                      const isCable = isCableMaterial(material);
 
-                  // ── Cable row ──────────────────────────────────────────────
-                  if (isCable) {
-                    const neededMetres = Math.max(1, qty);
-                    // Compute per-supplier cable purchase results
-                    const cableResults = SUPPLIERS.map((s) => {
-                      const unitPrice = prices[material.id]?.[s.id]?.data?.prix_ht ?? null;
-                      const packaging = material.cable!.packaging[s.id];
-                      if (!packaging) {
-                        return { supplierId: s.id, lotsNeeded: 0, metresBought: 0, totalPrice: null, pricePerMetre: null, surMesure: false };
+                      // ── Cable row ──────────────────────────────────────────────
+                      if (isCable) {
+                        const neededMetres = Math.max(1, qty);
+                        // Compute per-supplier cable purchase results
+                        const cableResults = SUPPLIERS.map((s) => {
+                          const unitPrice = prices[material.id]?.[s.id]?.data?.prix_ht ?? null;
+                          const packaging = material.cable!.packaging[s.id];
+                          if (!packaging) {
+                            return {
+                              supplierId: s.id,
+                              lotsNeeded: 0,
+                              metresBought: 0,
+                              totalPrice: null,
+                              pricePerMetre: null,
+                              surMesure: false,
+                            };
+                          }
+                          return {
+                            supplierId: s.id,
+                            ...calcCablePurchase({ neededMetres, packaging, unitPrice }),
+                          };
+                        });
+                        const compared = compareCableSuppliers(cableResults);
+
+                        return (
+                          <tr
+                            key={material.id}
+                            className={[
+                              'border-b border-gray-50 transition-colors',
+                              idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
+                            ].join(' ')}
+                          >
+                            {/* Material name */}
+                            <td className="px-5 py-3">
+                              <div className="font-medium text-gray-800">{material.nom}</div>
+                              <div className="text-xs text-gray-400">{material.marque}</div>
+                              <div className="text-xs text-blue-500 font-medium mt-0.5">
+                                🔌 Câble (prix au mètre)
+                              </div>
+                            </td>
+
+                            {/* Metres needed */}
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={neededMetres}
+                                  onChange={(e) =>
+                                    setQuantity(material.id, parseInt(e.target.value, 10) || 1)
+                                  }
+                                  className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center
+                                focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                />
+                                <span className="text-xs text-gray-500">m</span>
+                              </div>
+                            </td>
+
+                            {/* Per-supplier cable cost */}
+                            {SUPPLIERS.map((s) => {
+                              const cell = prices[material.id]?.[s.id];
+                              const ref = material.references_fournisseurs[s.id];
+                              const result = compared.find((r) => r.supplierId === s.id);
+                              const packaging = material.cable!.packaging[s.id];
+
+                              if (!ref) {
+                                return (
+                                  <td
+                                    key={s.id}
+                                    className="px-5 py-3 text-right text-gray-300 text-xs"
+                                  >
+                                    Non référencé
+                                  </td>
+                                );
+                              }
+                              if (!cell || cell.status === 'idle') {
+                                return (
+                                  <td
+                                    key={s.id}
+                                    className="px-5 py-3 text-right text-gray-300 text-xs"
+                                  >
+                                    —
+                                  </td>
+                                );
+                              }
+                              if (cell.status === 'loading') {
+                                return (
+                                  <td key={s.id} className="px-5 py-3 text-right">
+                                    <span className="text-gray-400 text-xs">…</span>
+                                  </td>
+                                );
+                              }
+                              if (cell.status === 'error') {
+                                return (
+                                  <td key={s.id} className="px-5 py-3 text-right">
+                                    <span
+                                      className="text-red-400 text-xs"
+                                      title={cell.errorMessage ?? ''}
+                                    >
+                                      ⚠ Erreur
+                                    </span>
+                                  </td>
+                                );
+                              }
+                              if (!result || !packaging) {
+                                return (
+                                  <td
+                                    key={s.id}
+                                    className="px-5 py-3 text-right text-gray-300 text-xs"
+                                  >
+                                    —
+                                  </td>
+                                );
+                              }
+
+                              const lotSize = packaging.lot_metres;
+                              return (
+                                <td key={s.id} className="px-5 py-3 text-right">
+                                  {/* Total price */}
+                                  <div
+                                    className={`font-semibold tabular-nums ${result.isBest ? 'text-green-600' : 'text-gray-900'}`}
+                                  >
+                                    {result.totalPrice !== null ? fmt(result.totalPrice) : '—'}
+                                  </div>
+                                  {/* Diff vs best */}
+                                  {result.diffFromBest !== undefined && (
+                                    <div className="text-xs tabular-nums text-red-300 font-medium">
+                                      {fmtDiff(result.diffFromBest)}
+                                    </div>
+                                  )}
+                                  {/* Lot breakdown */}
+                                  <div className="text-xs text-gray-400 mt-0.5">
+                                    {result.surMesure
+                                      ? `Sur mesure — ${neededMetres} m`
+                                      : `${result.lotsNeeded} × ${lotSize} m = ${result.metresBought} m livrés`}
+                                  </div>
+                                  {/* Price per metre */}
+                                  {result.pricePerMetre !== null && (
+                                    <div className="text-xs text-gray-400 tabular-nums">
+                                      {result.pricePerMetre.toLocaleString('fr-FR', {
+                                        style: 'currency',
+                                        currency: 'EUR',
+                                      })}
+                                      /m
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+
+                            {/* Remove */}
+                            <td className="px-3 py-3 text-right">
+                              <button
+                                onClick={() => removeItem(material.id)}
+                                className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded"
+                                title="Retirer de la commande"
+                                aria-label={`Retirer ${material.nom}`}
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        );
                       }
-                      return { supplierId: s.id, ...calcCablePurchase({ neededMetres, packaging, unitPrice }) };
-                    });
-                    const compared = compareCableSuppliers(cableResults);
 
-                    return (
-                      <tr
-                        key={material.id}
-                        className={[
-                          'border-b border-gray-50 transition-colors',
-                          idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
-                        ].join(' ')}
-                      >
-                        {/* Material name */}
-                        <td className="px-5 py-3">
-                          <div className="font-medium text-gray-800">{material.nom}</div>
-                          <div className="text-xs text-gray-400">{material.marque}</div>
-                          <div className="text-xs text-blue-500 font-medium mt-0.5">🔌 Câble (prix au mètre)</div>
-                        </td>
+                      // ── Regular (non-cable) row ────────────────────────────────
 
-                        {/* Metres needed */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
+                      // Compute per-row price comparison using tier-aware unit prices
+                      const rowPrices = new Map<string, number>();
+                      for (const s of SUPPLIERS) {
+                        const cell = prices[material.id]?.[s.id];
+                        const baseP = cell?.data?.prix_ht;
+                        if (baseP === null || baseP === undefined) continue;
+                        const tiers = cell?.data?.tiers;
+                        const unitP =
+                          tiers && tiers.length > 0 ? bestTierForQty(tiers, qty).prix_ht : baseP;
+                        rowPrices.set(s.id, unitP * qty);
+                      }
+                      const rowComparison = computeComparison(rowPrices);
+                      return (
+                        <tr
+                          key={material.id}
+                          className={[
+                            'border-b border-gray-50 transition-colors',
+                            idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
+                          ].join(' ')}
+                        >
+                          {/* Material name */}
+                          <td className="px-5 py-3">
+                            <div className="font-medium text-gray-800">{material.nom}</div>
+                            <div className="text-xs text-gray-400">{material.marque}</div>
+                          </td>
+
+                          {/* Quantity */}
+                          <td className="px-4 py-3">
                             <input
                               type="number"
                               min={1}
-                              value={neededMetres}
-                              onChange={(e) => setQuantity(material.id, parseInt(e.target.value, 10) || 1)}
-                              className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center
-                                focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            />
-                            <span className="text-xs text-gray-500">m</span>
-                          </div>
-                        </td>
-
-                        {/* Per-supplier cable cost */}
-                        {SUPPLIERS.map((s) => {
-                          const cell = prices[material.id]?.[s.id];
-                          const ref = material.references_fournisseurs[s.id];
-                          const result = compared.find((r) => r.supplierId === s.id);
-                          const packaging = material.cable!.packaging[s.id];
-
-                          if (!ref) {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
-                                Non référencé
-                              </td>
-                            );
-                          }
-                          if (!cell || cell.status === 'idle') {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">—</td>
-                            );
-                          }
-                          if (cell.status === 'loading') {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right">
-                                <span className="text-gray-400 text-xs">…</span>
-                              </td>
-                            );
-                          }
-                          if (cell.status === 'error') {
-                            return (
-                              <td key={s.id} className="px-5 py-3 text-right">
-                                <span className="text-red-400 text-xs" title={cell.errorMessage ?? ''}>⚠ Erreur</span>
-                              </td>
-                            );
-                          }
-                          if (!result || !packaging) {
-                            return <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">—</td>;
-                          }
-
-                          const lotSize = packaging.lot_metres;
-                          return (
-                            <td key={s.id} className="px-5 py-3 text-right">
-                              {/* Total price */}
-                              <div className={`font-semibold tabular-nums ${result.isBest ? 'text-green-600' : 'text-gray-900'}`}>
-                                {result.totalPrice !== null ? fmt(result.totalPrice) : '—'}
-                              </div>
-                              {/* Diff vs best */}
-                              {result.diffFromBest !== undefined && (
-                                <div className="text-xs tabular-nums text-red-300 font-medium">
-                                  {fmtDiff(result.diffFromBest)}
-                                </div>
-                              )}
-                              {/* Lot breakdown */}
-                              <div className="text-xs text-gray-400 mt-0.5">
-                                {result.surMesure
-                                  ? `Sur mesure — ${neededMetres} m`
-                                  : `${result.lotsNeeded} × ${lotSize} m = ${result.metresBought} m livrés`
-                                }
-                              </div>
-                              {/* Price per metre */}
-                              {result.pricePerMetre !== null && (
-                                <div className="text-xs text-gray-400 tabular-nums">
-                                  {result.pricePerMetre.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}/m
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
-
-                        {/* Remove */}
-                        <td className="px-3 py-3 text-right">
-                          <button
-                            onClick={() => removeItem(material.id)}
-                            className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded"
-                            title="Retirer de la commande"
-                            aria-label={`Retirer ${material.nom}`}
-                          >
-                            ✕
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  }
-
-                  // ── Regular (non-cable) row ────────────────────────────────
-
-                  // Compute per-row price comparison using tier-aware unit prices
-                  const rowPrices = new Map<string, number>();
-                  for (const s of SUPPLIERS) {
-                    const cell = prices[material.id]?.[s.id];
-                    const baseP = cell?.data?.prix_ht;
-                    if (baseP === null || baseP === undefined) continue;
-                    const tiers = cell?.data?.tiers;
-                    const unitP = (tiers && tiers.length > 0) ? bestTierForQty(tiers, qty).prix_ht : baseP;
-                    rowPrices.set(s.id, unitP * qty);
-                  }
-                  const rowComparison = computeComparison(rowPrices);
-                  return (
-                    <tr
-                      key={material.id}
-                      className={[
-                        'border-b border-gray-50 transition-colors',
-                        idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40',
-                      ].join(' ')}
-                    >
-                      {/* Material name */}
-                      <td className="px-5 py-3">
-                        <div className="font-medium text-gray-800">{material.nom}</div>
-                        <div className="text-xs text-gray-400">{material.marque}</div>
-                      </td>
-
-                      {/* Quantity */}
-                      <td className="px-4 py-3">
-                        <input
-                          type="number"
-                          min={1}
-                          value={qty}
-                          onChange={(e) => setQuantity(material.id, parseInt(e.target.value, 10) || 1)}
-                          className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center
+                              value={qty}
+                              onChange={(e) =>
+                                setQuantity(material.id, parseInt(e.target.value, 10) || 1)
+                              }
+                              className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center
                               focus:outline-none focus:ring-2 focus:ring-orange-400"
-                        />
-                      </td>
-
-                      {/* Per-supplier price × qty */}
-                      {SUPPLIERS.map((s) => {
-                        const cell = prices[material.id]?.[s.id];
-                        const ref = material.references_fournisseurs[s.id];
-
-                        if (!ref) {
-                          return (
-                            <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">
-                              Non référencé
-                            </td>
-                          );
-                        }
-                        if (!cell || cell.status === 'idle') {
-                          return <td key={s.id} className="px-5 py-3 text-right text-gray-300 text-xs">—</td>;
-                        }
-                        if (cell.status === 'loading') {
-                          return (
-                            <td key={s.id} className="px-5 py-3 text-right">
-                              <span className="text-gray-400 text-xs">…</span>
-                            </td>
-                          );
-                        }
-                        if (cell.status === 'error') {
-                          return (
-                            <td key={s.id} className="px-5 py-3 text-right">
-                              <span className="text-red-400 text-xs" title={cell.errorMessage ?? ''}>⚠ Erreur</span>
-                            </td>
-                          );
-                        }
-                        const basePrice = cell.data?.prix_ht ?? null;
-                        const tiers = cell.data?.tiers;
-                        const activeTier = (tiers && tiers.length > 0) ? bestTierForQty(tiers, qty) : null;
-                        const unitPrice = activeTier ? activeTier.prix_ht : basePrice;
-                        const lineTotal = unitPrice !== null ? unitPrice * qty : null;
-                        const cmp = rowComparison.get(s.id);
-                        return (
-                          <td key={s.id} className="px-5 py-3 text-right">
-                            <div className={`font-semibold tabular-nums ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}>
-                              {lineTotal !== null ? fmt(lineTotal) : '—'}
-                            </div>
-                            {cmp?.diffFromBest !== undefined && (
-                              <div className="text-xs tabular-nums text-red-300 font-medium">
-                                {fmtDiff(cmp.diffFromBest)}
-                              </div>
-                            )}
-                            <div className="text-xs text-gray-400 tabular-nums">
-                              {unitPrice !== null ? `${fmt(unitPrice)} × ${qty}` : ''}
-                              {activeTier && activeTier.discountPct > 0 && (
-                                <span className="ml-1 text-orange-500">🧮 -{activeTier.discountPct}%</span>
-                              )}
-                            </div>
+                            />
                           </td>
-                        );
-                      })}
 
-                      {/* Remove */}
-                      <td className="px-3 py-3 text-right">
-                        <button
-                          onClick={() => removeItem(material.id)}
-                          className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded"
-                          title="Retirer de la commande"
-                          aria-label={`Retirer ${material.nom}`}
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
+                          {/* Per-supplier price × qty */}
+                          {SUPPLIERS.map((s) => {
+                            const cell = prices[material.id]?.[s.id];
+                            const ref = material.references_fournisseurs[s.id];
+
+                            if (!ref) {
+                              return (
+                                <td
+                                  key={s.id}
+                                  className="px-5 py-3 text-right text-gray-300 text-xs"
+                                >
+                                  Non référencé
+                                </td>
+                              );
+                            }
+                            if (!cell || cell.status === 'idle') {
+                              return (
+                                <td
+                                  key={s.id}
+                                  className="px-5 py-3 text-right text-gray-300 text-xs"
+                                >
+                                  —
+                                </td>
+                              );
+                            }
+                            if (cell.status === 'loading') {
+                              return (
+                                <td key={s.id} className="px-5 py-3 text-right">
+                                  <span className="text-gray-400 text-xs">…</span>
+                                </td>
+                              );
+                            }
+                            if (cell.status === 'error') {
+                              return (
+                                <td key={s.id} className="px-5 py-3 text-right">
+                                  <span
+                                    className="text-red-400 text-xs"
+                                    title={cell.errorMessage ?? ''}
+                                  >
+                                    ⚠ Erreur
+                                  </span>
+                                </td>
+                              );
+                            }
+                            const basePrice = cell.data?.prix_ht ?? null;
+                            const tiers = cell.data?.tiers;
+                            const activeTier =
+                              tiers && tiers.length > 0 ? bestTierForQty(tiers, qty) : null;
+                            const unitPrice = activeTier ? activeTier.prix_ht : basePrice;
+                            const lineTotal = unitPrice !== null ? unitPrice * qty : null;
+                            const cmp = rowComparison.get(s.id);
+                            return (
+                              <td key={s.id} className="px-5 py-3 text-right">
+                                <div
+                                  className={`font-semibold tabular-nums ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}
+                                >
+                                  {lineTotal !== null ? fmt(lineTotal) : '—'}
+                                </div>
+                                {cmp?.diffFromBest !== undefined && (
+                                  <div className="text-xs tabular-nums text-red-300 font-medium">
+                                    {fmtDiff(cmp.diffFromBest)}
+                                  </div>
+                                )}
+                                <div className="text-xs text-gray-400 tabular-nums">
+                                  {unitPrice !== null ? `${fmt(unitPrice)} × ${qty}` : ''}
+                                  {activeTier && activeTier.discountPct > 0 && (
+                                    <span className="ml-1 text-orange-500">
+                                      🧮 -{activeTier.discountPct}%
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          })}
+
+                          {/* Remove */}
+                          <td className="px-3 py-3 text-right">
+                            <button
+                              onClick={() => removeItem(material.id)}
+                              className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded"
+                              title="Retirer de la commande"
+                              aria-label={`Retirer ${material.nom}`}
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </React.Fragment>
+              );
+            })}
           </tbody>
 
           {/* ── Totals row ── */}
           <tfoot>
-          <tr className="bg-gray-50 border-t-2 border-gray-200">
-            <td className="px-5 py-3 text-sm font-semibold text-gray-700">Total HT estimé</td>
-            <td/>
-            {(() => {
-              // Compute totals comparison across suppliers
-              const totalPrices = new Map<string, number>();
-              for (const s of SUPPLIERS) {
-                const t = supplierTotals[s.id].total;
-                if (t > 0) totalPrices.set(s.id, t);
-              }
-              const totalComparison = computeComparison(totalPrices);
-              return SUPPLIERS.map((s) => {
-                const {total, hasAllPrices} = supplierTotals[s.id];
-                const cmp = totalComparison.get(s.id);
-                return (
-                  <td key={s.id} className="px-5 py-3 text-right">
-                    <div
-                      className={`font-bold tabular-nums text-base ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}>
-                      {total > 0 ? fmt(total) : '—'}
-                    </div>
-                    {cmp?.diffFromBest !== undefined && (
-                      <div className="text-sm tabular-nums text-red-300 font-medium">
-                        {fmtDiff(cmp.diffFromBest)}
+            <tr className="bg-gray-50 border-t-2 border-gray-200">
+              <td className="px-5 py-3 text-sm font-semibold text-gray-700">Total HT estimé</td>
+              <td />
+              {(() => {
+                // Compute totals comparison across suppliers
+                const totalPrices = new Map<string, number>();
+                for (const s of SUPPLIERS) {
+                  const t = supplierTotals[s.id].total;
+                  if (t > 0) totalPrices.set(s.id, t);
+                }
+                const totalComparison = computeComparison(totalPrices);
+                return SUPPLIERS.map((s) => {
+                  const { total, hasAllPrices } = supplierTotals[s.id];
+                  const cmp = totalComparison.get(s.id);
+                  return (
+                    <td key={s.id} className="px-5 py-3 text-right">
+                      <div
+                        className={`font-bold tabular-nums text-base ${cmp?.isBest ? 'text-green-600' : 'text-gray-900'}`}
+                      >
+                        {total > 0 ? fmt(total) : '—'}
                       </div>
-                    )}
-                    {!hasAllPrices && total > 0 && (
-                      <div className="text-xs text-amber-500">⚠ prix partiels</div>
-                    )}
-                    {selectedMaterials.length > 0 && (
-                      <button
-                        onClick={() => handleExportEmail(s.id, s.label)}
-                        className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium
+                      {cmp?.diffFromBest !== undefined && (
+                        <div className="text-sm tabular-nums text-red-300 font-medium">
+                          {fmtDiff(cmp.diffFromBest)}
+                        </div>
+                      )}
+                      {!hasAllPrices && total > 0 && (
+                        <div className="text-xs text-amber-500">⚠ prix partiels</div>
+                      )}
+                      {selectedMaterials.length > 0 && (
+                        <button
+                          onClick={() => handleExportEmail(s.id, s.label)}
+                          className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium
                             bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200
                             transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400"
-                        title={`Exporter la commande ${s.label} (format e-mail)`}
-                      >
-                        ✉ {s.label}
-                      </button>
-                    )}
-                  </td>
-                );
-              });
-            })()}
-            <td/>
-          </tr>
+                          title={`Exporter la commande ${s.label} (format e-mail)`}
+                        >
+                          ✉ {s.label}
+                        </button>
+                      )}
+                    </td>
+                  );
+                });
+              })()}
+              <td />
+            </tr>
           </tfoot>
         </table>
       </div>
     </div>
   );
 }
-

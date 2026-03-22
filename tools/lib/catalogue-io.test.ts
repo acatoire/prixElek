@@ -5,7 +5,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Catalog, Material } from '../../src/types/material';
 import type { ExtractedProduct } from './extract-product-from-page';
-import { cataloguePath, buildMaterial, addMaterialToCatalogue, readCatalogue, writeCatalogue } from './catalogue-io';
+import {
+  cataloguePath,
+  buildMaterial,
+  addMaterialToCatalogue,
+  readCatalogue,
+  writeCatalogue,
+} from './catalogue-io';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

@@ -26,18 +26,14 @@ export interface UseRexelAuthReturn {
 }
 
 export function useRexelAuth(): UseRexelAuthReturn {
-  const [token, setToken] = useState<string>(
-    () => localStorage.getItem(STORAGE_KEY_TOKEN) ?? ''
-  );
+  const [token, setToken] = useState<string>(() => localStorage.getItem(STORAGE_KEY_TOKEN) ?? '');
   const [branchId, setBranchId] = useState<string>(
     () => localStorage.getItem(STORAGE_KEY_BRANCH) ?? ''
   );
   const [zipcode, setZipcode] = useState<string>(
     () => localStorage.getItem(STORAGE_KEY_ZIPCODE) ?? ''
   );
-  const [city, setCity] = useState<string>(
-    () => localStorage.getItem(STORAGE_KEY_CITY) ?? ''
-  );
+  const [city, setCity] = useState<string>(() => localStorage.getItem(STORAGE_KEY_CITY) ?? '');
 
   const saveCredentials = useCallback((credentials: RexelCredentials) => {
     const cleanToken = credentials.token.trim();

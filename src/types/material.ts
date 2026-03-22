@@ -55,4 +55,3 @@ export type Catalog = Material[];
 export function isCableMaterial(m: Material): m is Material & { cable: CableConfig } {
   return m.cable?.unite_base === 'ml';
 }
-

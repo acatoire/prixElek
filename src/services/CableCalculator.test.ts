@@ -19,9 +19,9 @@ describe('calcCablePurchase', () => {
   it('rounds up to the next reel (25 m lot, prix/metre)', () => {
     const r = calcCablePurchase({ neededMetres: 37, packaging: packA, unitPrice: 1.02 });
     expect(r.surMesure).toBe(false);
-    expect(r.lotsNeeded).toBe(2);           // ceil(37/25) = 2
-    expect(r.metresBought).toBe(50);         // 2 × 25
-    expect(r.totalPrice).toBeCloseTo(51.0);  // 1.02 × 25 × 2
+    expect(r.lotsNeeded).toBe(2); // ceil(37/25) = 2
+    expect(r.metresBought).toBe(50); // 2 × 25
+    expect(r.totalPrice).toBeCloseTo(51.0); // 1.02 × 25 × 2
     expect(r.pricePerMetre).toBeCloseTo(1.02);
   });
 
@@ -33,19 +33,19 @@ describe('calcCablePurchase', () => {
 
   it('50 m reel, priced per lot', () => {
     const r = calcCablePurchase({ neededMetres: 37, packaging: packB, unitPrice: 48.0 });
-    expect(r.lotsNeeded).toBe(1);           // ceil(37/50) = 1
+    expect(r.lotsNeeded).toBe(1); // ceil(37/50) = 1
     expect(r.metresBought).toBe(50);
     expect(r.totalPrice).toBeCloseTo(48.0); // 1 reel × 48 €
     expect(r.pricePerMetre).toBeCloseTo(48 / 50);
   });
 
   it('sur-mesure — exact metres, no rounding', () => {
-    const r = calcCablePurchase({ neededMetres: 37, packaging: packC, unitPrice: 1.10 });
+    const r = calcCablePurchase({ neededMetres: 37, packaging: packC, unitPrice: 1.1 });
     expect(r.surMesure).toBe(true);
     expect(r.lotsNeeded).toBe(1);
     expect(r.metresBought).toBe(37);
-    expect(r.totalPrice).toBeCloseTo(37 * 1.10);
-    expect(r.pricePerMetre).toBeCloseTo(1.10);
+    expect(r.totalPrice).toBeCloseTo(37 * 1.1);
+    expect(r.pricePerMetre).toBeCloseTo(1.1);
   });
 
   it('returns null prices when unitPrice is null', () => {
@@ -64,7 +64,10 @@ describe('calcCablePurchase', () => {
 // ── compareCableSuppliers ─────────────────────────────────────────────────────
 
 describe('compareCableSuppliers', () => {
-  const base = (supplierId: string, totalPrice: number | null): { supplierId: string } & CableCalcResult => ({
+  const base = (
+    supplierId: string,
+    totalPrice: number | null
+  ): { supplierId: string } & CableCalcResult => ({
     supplierId,
     lotsNeeded: 1,
     metresBought: 50,
@@ -93,4 +96,3 @@ describe('compareCableSuppliers', () => {
     expect(results.every((r) => r.totalPrice === null)).toBe(true);
   });
 });
-

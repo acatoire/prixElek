@@ -37,12 +37,14 @@ const FILE_CATEGORIES = new Map([
   ['catalogue.cables', ['Câble']],
 ]);
 
-function makeProps(overrides?: Partial<{
-  catalogueFiles: string[];
-  fileCategories: Map<string, string[]>;
-  onAdd: (m: Material, f?: string) => boolean;
-  onClose: () => void;
-}>) {
+function makeProps(
+  overrides?: Partial<{
+    catalogueFiles: string[];
+    fileCategories: Map<string, string[]>;
+    onAdd: (m: Material, f?: string) => boolean;
+    onClose: () => void;
+  }>
+) {
   return {
     catalogueFiles: CATALOGUE_FILES,
     fileCategories: FILE_CATEGORIES,
@@ -137,7 +139,9 @@ describe('AddFromUrlModal', () => {
 
   it('shows error step when fetch fails', async () => {
     render(<AddFromUrlModal {...makeProps()} />);
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 }) as unknown as typeof fetch;
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 503 }) as unknown as typeof fetch;
     fireEvent.change(screen.getByPlaceholderText(/materielelectrique.com/), {
       target: { value: VALID_URL },
     });
@@ -147,7 +151,9 @@ describe('AddFromUrlModal', () => {
 
   it('shows error step when fetch throws a network error', async () => {
     render(<AddFromUrlModal {...makeProps()} />);
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
     fireEvent.change(screen.getByPlaceholderText(/materielelectrique.com/), {
       target: { value: VALID_URL },
     });
@@ -195,7 +201,9 @@ describe('AddFromUrlModal', () => {
   it('can edit fields in confirm step', async () => {
     const props = makeProps();
     await reachConfirmStep(props);
-    fireEvent.change(screen.getByDisplayValue('Prise 2P+T'), { target: { value: 'Prise modifiée' } });
+    fireEvent.change(screen.getByDisplayValue('Prise 2P+T'), {
+      target: { value: 'Prise modifiée' },
+    });
     expect(screen.getByDisplayValue('Prise modifiée')).toBeInTheDocument();
     fireEvent.change(screen.getByDisplayValue('Legrand'), { target: { value: 'Schneider' } });
     expect(screen.getByDisplayValue('Schneider')).toBeInTheDocument();
@@ -206,9 +214,13 @@ describe('AddFromUrlModal', () => {
     await reachConfirmStep(props);
     fireEvent.change(screen.getByDisplayValue('71041542'), { target: { value: 'NEW-ID' } });
     expect(screen.getByDisplayValue('NEW-ID')).toBeInTheDocument();
-    fireEvent.change(screen.getByDisplayValue('Prise de courant'), { target: { value: 'Interrupteur' } });
+    fireEvent.change(screen.getByDisplayValue('Prise de courant'), {
+      target: { value: 'Interrupteur' },
+    });
     expect(screen.getByDisplayValue('Interrupteur')).toBeInTheDocument();
-    fireEvent.change(screen.getByDisplayValue('prise-2pt-legrand-p-71041542'), { target: { value: 'new-ref' } });
+    fireEvent.change(screen.getByDisplayValue('prise-2pt-legrand-p-71041542'), {
+      target: { value: 'new-ref' },
+    });
     expect(screen.getByDisplayValue('new-ref')).toBeInTheDocument();
   });
 
@@ -287,7 +299,9 @@ describe('AddFromUrlModal', () => {
     await reachConfirmStep(props);
     fireEvent.click(screen.getByRole('button', { name: /Suivant/ }));
     fireEvent.click(screen.getByRole('button', { name: /Ajouter au catalogue/ }));
-    await waitFor(() => expect(screen.getByText(/ajouté au catalogue avec succès/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/ajouté au catalogue avec succès/)).toBeInTheDocument()
+    );
     expect(props.onAdd).toHaveBeenCalledOnce();
   });
 
@@ -336,7 +350,7 @@ describe('AddFromUrlModal', () => {
   it('shows no category selector when selected file has no categories', async () => {
     const props = makeProps({
       fileCategories: new Map([
-        ['catalogue.prises.legrand', []],   // empty → no selector, no text
+        ['catalogue.prises.legrand', []], // empty → no selector, no text
         ['catalogue.cables', ['Câble']],
       ]),
     });
@@ -357,7 +371,9 @@ describe('AddFromUrlModal', () => {
       target: { value: 'catalogue.interrupteurs' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Ajouter au catalogue/ }));
-    await waitFor(() => expect(screen.getByText(/ajouté au catalogue avec succès/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/ajouté au catalogue avec succès/)).toBeInTheDocument()
+    );
     // onAdd called with the new file name as second arg
     expect(props.onAdd).toHaveBeenCalledWith(
       expect.objectContaining({ nom: 'Prise 2P+T' }),
@@ -372,7 +388,7 @@ describe('AddFromUrlModal', () => {
     const props = makeProps({
       fileCategories: new Map([
         ['catalogue.prises.legrand', ['Prise de courant', 'Prise USB']],
-        ['catalogue.cables', ['Prise de courant', 'Câble']],  // also has same category
+        ['catalogue.cables', ['Prise de courant', 'Câble']], // also has same category
       ]),
     });
     await reachConfirmStep(props);
@@ -384,8 +400,3 @@ describe('AddFromUrlModal', () => {
     expect(combobox).toHaveValue('Prise de courant');
   });
 });
-
-
-
-
-

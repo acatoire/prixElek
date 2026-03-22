@@ -22,7 +22,7 @@ interface UseExportReminderReturn {
 
 export function useExportReminder(
   lastModifiedAt: number | null,
-  lastExportedAt: number | null,
+  lastExportedAt: number | null
 ): UseExportReminderReturn {
   const [showReminder, setShowReminder] = useState(false);
   // Tracks when the user last dismissed, to avoid re-showing within the same interval
@@ -74,4 +74,3 @@ export function useExportReminder(
 
   return { showReminder, dismissReminder };
 }
-

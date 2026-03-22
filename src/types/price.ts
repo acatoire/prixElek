@@ -44,7 +44,6 @@ export interface SupplierPrice {
   tiers?: PriceTier[];
 }
 
-
 /** Loading state for one supplier column on one material row */
 export type PriceFetchStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -60,4 +59,3 @@ export interface PriceCell {
  * Key = materialId, Value = map of supplierId → PriceCell
  */
 export type PriceMatrix = Record<string, Record<string, PriceCell>>;
-

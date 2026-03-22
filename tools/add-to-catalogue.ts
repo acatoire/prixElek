@@ -25,7 +25,13 @@ import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import * as readline from 'readline';
 import { extractProductFromUrl } from './lib/extract-product-from-page';
-import { cataloguePath, readCatalogue, writeCatalogue, buildMaterial, addMaterialToCatalogue } from './lib/catalogue-io';
+import {
+  cataloguePath,
+  readCatalogue,
+  writeCatalogue,
+  buildMaterial,
+  addMaterialToCatalogue,
+} from './lib/catalogue-io';
 import type { ScrapingConfig } from '../src/adapters/materielelectrique';
 import { DEFAULT_SCRAPING_CONFIG } from '../src/adapters/materielelectrique';
 
@@ -142,7 +148,9 @@ async function main(): Promise<void> {
     console.error('');
     console.error('Example:');
     console.error('  npx tsx tools/add-to-catalogue.ts https://www.materielelectrique.com/...');
-    console.error('  npx tsx tools/add-to-catalogue.ts catalogue.prises.legrand https://www.materielelectrique.com/...');
+    console.error(
+      '  npx tsx tools/add-to-catalogue.ts catalogue.prises.legrand https://www.materielelectrique.com/...'
+    );
     process.exit(1);
   }
 
@@ -198,4 +206,3 @@ main().catch((err) => {
   console.error('Unexpected error:', err);
   process.exit(1);
 });
-

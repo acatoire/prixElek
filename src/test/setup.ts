@@ -22,5 +22,3 @@ if (typeof URL.revokeObjectURL === 'undefined') {
     configurable: true,
   });
 }
-
-

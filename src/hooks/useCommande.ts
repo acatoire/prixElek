@@ -52,7 +52,9 @@ export function useCommande(): UseCommandeReturn {
         ids.forEach((id) => next.add(id));
         setQuantities((q) => {
           const updated = { ...q };
-          ids.forEach((id) => { if (updated[id] === undefined) updated[id] = 1; });
+          ids.forEach((id) => {
+            if (updated[id] === undefined) updated[id] = 1;
+          });
           return updated;
         });
       } else {
@@ -67,8 +69,16 @@ export function useCommande(): UseCommandeReturn {
   }, []);
 
   const removeItem = useCallback((id: string) => {
-    setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
-    setQuantities((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.delete(id);
+      return n;
+    });
+    setQuantities((prev) => {
+      const n = { ...prev };
+      delete n[id];
+      return n;
+    });
   }, []);
 
   const exportOrder = useCallback(() => {
@@ -95,6 +105,14 @@ export function useCommande(): UseCommandeReturn {
     );
   }, []);
 
-  return { selectedIds, quantities, toggleSelected, setAllSelected, setQuantity, removeItem, exportOrder, importOrder };
+  return {
+    selectedIds,
+    quantities,
+    toggleSelected,
+    setAllSelected,
+    setQuantity,
+    removeItem,
+    exportOrder,
+    importOrder,
+  };
 }
-

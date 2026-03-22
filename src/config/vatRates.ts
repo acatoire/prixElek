@@ -10,4 +10,3 @@
  * materielelectrique.com publishes prices TTC — we divide by (1 + this) to get HT.
  */
 export const MATERIELELECTRIQUE_VAT_RATE = 0.2;
-

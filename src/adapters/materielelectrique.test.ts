@@ -9,7 +9,11 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
-import { MaterielElectriqueAdapter, loadScrapingConfig, MATERIELELECTRIQUE_VAT_RATE } from './materielelectrique';
+import {
+  MaterielElectriqueAdapter,
+  loadScrapingConfig,
+  MATERIELELECTRIQUE_VAT_RATE,
+} from './materielelectrique';
 import { FetchError } from '@/types/error';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
@@ -19,14 +23,16 @@ const REAL_SLUG = 'prise-de-courant-legrand-celiane-4x2p-t-p-297691';
 // Direct product page URL pattern
 const DIRECT_URL = `https://www.materielelectrique.com/${REAL_SLUG}.html`;
 
-function makeHtml(overrides?: Partial<{
-  sku: string;
-  mpn: string;
-  price: number | string;
-  availability: string;
-  hasOffer: boolean;
-  hasProduct: boolean;
-}>): string {
+function makeHtml(
+  overrides?: Partial<{
+    sku: string;
+    mpn: string;
+    price: number | string;
+    availability: string;
+    hasOffer: boolean;
+    hasProduct: boolean;
+  }>
+): string {
   const o = {
     sku: REF,
     mpn: '067128',
@@ -84,9 +90,7 @@ afterAll(() => server.close());
 function mockDirect(html: string, status = 200): void {
   server.use(
     http.get(DIRECT_URL, () =>
-      status === 200
-        ? HttpResponse.text(html, { status: 200 })
-        : new HttpResponse(null, { status })
+      status === 200 ? HttpResponse.text(html, { status: 200 }) : new HttpResponse(null, { status })
     )
   );
 }
@@ -126,7 +130,9 @@ describe('MaterielElectriqueAdapter', () => {
     it('uses the direct URL in Node (no window object)', async () => {
       // Adapter tests run in Node environment — window is undefined
       const spy = vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: makeHtml() });
-      await adapter.getPrice(REF, REAL_SLUG).catch(() => {/* ignore parse result */});
+      await adapter.getPrice(REF, REAL_SLUG).catch(() => {
+        /* ignore parse result */
+      });
       const calledUrl = spy.mock.calls[0][0] as string;
       expect(calledUrl).toContain('materielelectrique.com');
       expect(calledUrl).not.toContain('/proxy/');
@@ -161,7 +167,9 @@ describe('MaterielElectriqueAdapter', () => {
       mockDirect(makeHtml());
       const price = await adapter.getPrice(REF, REAL_SLUG);
       // 18.64 TTC → 18.64 / 1.2 = 15.53 HT
-      expect(price.prix_ht).toBe(Math.round((18.64 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(price.prix_ht).toBe(
+        Math.round((18.64 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
       expect(price.unite).toBe('pièce');
       expect(price.stock).toBe(1);
       expect(price.fetchedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -170,7 +178,9 @@ describe('MaterielElectriqueAdapter', () => {
     it('matches by mpn when sku does not match', async () => {
       mockDirect(makeHtml({ sku: 'SOMETHING-ELSE', mpn: '067128' }));
       const price = await adapter.getPrice('067128', REAL_SLUG);
-      expect(price.prix_ht).toBe(Math.round((18.64 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(price.prix_ht).toBe(
+        Math.round((18.64 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('handles LimitedAvailability as in-stock', async () => {
@@ -248,9 +258,7 @@ describe('MaterielElectriqueAdapter', () => {
     });
 
     it('throws NETWORK_ERROR on connection failure', async () => {
-      server.use(
-        http.get(DIRECT_URL, () => HttpResponse.error())
-      );
+      server.use(http.get(DIRECT_URL, () => HttpResponse.error()));
       await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'NETWORK_ERROR',
         retryable: true,
@@ -259,7 +267,9 @@ describe('MaterielElectriqueAdapter', () => {
 
     it('throws NETWORK_ERROR when a non-Axios error is thrown', async () => {
       // Bypass MSW — spy on axios.get directly to throw a plain (non-Axios) Error
-      const spy = vi.spyOn(axios, 'get').mockRejectedValueOnce(new TypeError('plain non-axios error'));
+      const spy = vi
+        .spyOn(axios, 'get')
+        .mockRejectedValueOnce(new TypeError('plain non-axios error'));
       await expect(adapter.getPrice(REF, REAL_SLUG)).rejects.toMatchObject({
         code: 'NETWORK_ERROR',
         retryable: true,
@@ -275,11 +285,18 @@ describe('MaterielElectriqueAdapter', () => {
         <script type="application/ld+json">${JSON.stringify({
           '@type': 'Product',
           sku: REF,
-          offers: { '@type': 'Offer', price: 9.99, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+          offers: {
+            '@type': 'Offer',
+            price: 9.99,
+            priceCurrency: 'EUR',
+            availability: 'https://schema.org/InStock',
+          },
         })}</script>
       </html>`;
       const result = adapter.parseHtml(html, REF);
-      expect(result.prix_ht).toBe(Math.round((9.99 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((9.99 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('finds product nested inside an ItemList block', () => {
@@ -291,23 +308,37 @@ describe('MaterielElectriqueAdapter', () => {
             item: {
               '@type': 'Product',
               sku: REF,
-              offers: { '@type': 'Offer', price: 7.5, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+              offers: {
+                '@type': 'Offer',
+                price: 7.5,
+                priceCurrency: 'EUR',
+                availability: 'https://schema.org/InStock',
+              },
             },
           },
         ],
       })}</script></html>`;
       const result = adapter.parseHtml(html, REF);
-      expect(result.prix_ht).toBe(Math.round((7.5 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((7.5 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('is case-insensitive for reference matching', () => {
       const html = `<html><script type="application/ld+json">${JSON.stringify({
         '@type': 'Product',
         sku: 'leg067128',
-        offers: { '@type': 'Offer', price: 5.0, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+        offers: {
+          '@type': 'Offer',
+          price: 5.0,
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+        },
       })}</script></html>`;
       const result = adapter.parseHtml(html, 'LEG067128');
-      expect(result.prix_ht).toBe(Math.round((5.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((5.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
   });
 
@@ -316,20 +347,34 @@ describe('MaterielElectriqueAdapter', () => {
       const html = `<html><script type="application/ld+json">${JSON.stringify({
         '@type': 'Product',
         mpn: '067128',
-        offers: { '@type': 'Offer', price: 3.0, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+        offers: {
+          '@type': 'Offer',
+          price: 3.0,
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+        },
       })}</script></html>`;
       const result = adapter.parseHtml(html, '067128');
-      expect(result.prix_ht).toBe(Math.round((3.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((3.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('matches a product with no mpn field (mpn is undefined → falls back to empty string)', () => {
       const html = `<html><script type="application/ld+json">${JSON.stringify({
         '@type': 'Product',
         sku: REF,
-        offers: { '@type': 'Offer', price: 4.0, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+        offers: {
+          '@type': 'Offer',
+          price: 4.0,
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+        },
       })}</script></html>`;
       const result = adapter.parseHtml(html, REF);
-      expect(result.prix_ht).toBe(Math.round((4.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((4.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('matches sku when both sku and mpn are present but only sku matches', () => {
@@ -337,10 +382,17 @@ describe('MaterielElectriqueAdapter', () => {
         '@type': 'Product',
         sku: REF,
         mpn: 'WRONG-MPN',
-        offers: { '@type': 'Offer', price: 5.5, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+        offers: {
+          '@type': 'Offer',
+          price: 5.5,
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+        },
       })}</script></html>`;
       const result = adapter.parseHtml(html, REF);
-      expect(result.prix_ht).toBe(Math.round((5.5 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((5.5 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('continues past a non-matching nested object and finds match in a later sibling', () => {
@@ -353,11 +405,18 @@ describe('MaterielElectriqueAdapter', () => {
         mainEntity: {
           '@type': 'Product',
           sku: REF,
-          offers: { '@type': 'Offer', price: 77.0, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+          offers: {
+            '@type': 'Offer',
+            price: 77.0,
+            priceCurrency: 'EUR',
+            availability: 'https://schema.org/InStock',
+          },
         },
       })}</script></html>`;
       const result = adapter.parseHtml(html, REF);
-      expect(result.prix_ht).toBe(Math.round((77.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((77.0 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('returns the first match when multiple products exist in an array (early-return branch in array loop)', () => {
@@ -369,7 +428,12 @@ describe('MaterielElectriqueAdapter', () => {
             item: {
               '@type': 'Product',
               sku: REF,
-              offers: { '@type': 'Offer', price: 11.11, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+              offers: {
+                '@type': 'Offer',
+                price: 11.11,
+                priceCurrency: 'EUR',
+                availability: 'https://schema.org/InStock',
+              },
             },
           },
           {
@@ -377,13 +441,20 @@ describe('MaterielElectriqueAdapter', () => {
             item: {
               '@type': 'Product',
               sku: REF,
-              offers: { '@type': 'Offer', price: 22.22, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+              offers: {
+                '@type': 'Offer',
+                price: 22.22,
+                priceCurrency: 'EUR',
+                availability: 'https://schema.org/InStock',
+              },
             },
           },
         ],
       })}</script></html>`;
       const result = adapter.parseHtml(html, REF);
-      expect(result.prix_ht).toBe(Math.round((11.11 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((11.11 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('returns a match found via recursive plain-object traversal (early-return branch for object values)', () => {
@@ -392,11 +463,18 @@ describe('MaterielElectriqueAdapter', () => {
         mainEntity: {
           '@type': 'Product',
           sku: REF,
-          offers: { '@type': 'Offer', price: 55.5, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+          offers: {
+            '@type': 'Offer',
+            price: 55.5,
+            priceCurrency: 'EUR',
+            availability: 'https://schema.org/InStock',
+          },
         },
       })}</script></html>`;
       const result = adapter.parseHtml(html, REF);
-      expect(result.prix_ht).toBe(Math.round((55.5 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100);
+      expect(result.prix_ht).toBe(
+        Math.round((55.5 / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100
+      );
     });
 
     it('treats missing availability as Unknown → stock 0 (availability ?? "" branch)', () => {
@@ -425,7 +503,12 @@ describe('MaterielElectriqueAdapter', () => {
       const product = JSON.stringify({
         '@type': 'Product',
         sku: REF,
-        offers: { '@type': 'Offer', price: basePrice, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+        offers: {
+          '@type': 'Offer',
+          price: basePrice,
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+        },
       });
       return `<html>
         <script type="application/ld+json">${product}</script>
@@ -454,7 +537,7 @@ describe('MaterielElectriqueAdapter', () => {
     it('includes tiers in the returned SupplierPrice when #decreasing-prices table is present', () => {
       const result = adapter.parseHtml(makeTieredHtml(1.45), REF);
       expect(result.tiers).toHaveLength(2);
-      expect(result.tiers![0]).toMatchObject({ minQty: 1,  discountPct: 0 });
+      expect(result.tiers![0]).toMatchObject({ minQty: 1, discountPct: 0 });
       expect(result.tiers![1]).toMatchObject({ minQty: 20, discountPct: 6, prix_ttc: 1.36 });
     });
 
@@ -464,5 +547,3 @@ describe('MaterielElectriqueAdapter', () => {
     });
   });
 });
-
-

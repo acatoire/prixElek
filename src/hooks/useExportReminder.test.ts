@@ -8,8 +8,12 @@ import { useExportReminder } from './useExportReminder';
 const FIVE_MIN = 5 * 60 * 1000;
 
 describe('useExportReminder', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('does not show reminder when lastModifiedAt is null', () => {
     const { result } = renderHook(() => useExportReminder(null, null));
@@ -51,16 +55,21 @@ describe('useExportReminder', () => {
     const { result } = renderHook(() => useExportReminder(modifiedAt, null));
     expect(result.current.showReminder).toBe(true);
 
-    act(() => { result.current.dismissReminder(); });
+    act(() => {
+      result.current.dismissReminder();
+    });
     expect(result.current.showReminder).toBe(false);
 
     // Advance 4:59 — should still be snoozed
-    act(() => { vi.advanceTimersByTime(FIVE_MIN - 1000); });
+    act(() => {
+      vi.advanceTimersByTime(FIVE_MIN - 1000);
+    });
     expect(result.current.showReminder).toBe(false);
 
     // Advance past the 5-min mark — should reappear
-    act(() => { vi.advanceTimersByTime(2000); });
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
     expect(result.current.showReminder).toBe(true);
   });
 });
-

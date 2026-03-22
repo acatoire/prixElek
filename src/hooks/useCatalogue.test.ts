@@ -9,7 +9,10 @@ import type { Material } from '@/types/material';
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const SEED_MATERIAL: Material & { _sourceFile: string } = {
-  id: 'seed-1', nom: 'Prise Test', marque: 'Legrand', categorie: 'Prise de courant',
+  id: 'seed-1',
+  nom: 'Prise Test',
+  marque: 'Legrand',
+  categorie: 'Prise de courant',
   references_fournisseurs: { materielelectrique: 'REF-001' },
   _sourceFile: 'catalogue.prises.legrand',
 };
@@ -28,7 +31,9 @@ vi.mock('@/services/catalogueZip', () => ({
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('useCatalogue', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('loads seed materials on mount', () => {
     const { result } = renderHook(() => useCatalogue());
@@ -56,11 +61,16 @@ describe('useCatalogue', () => {
   it('addMaterial adds a new material and sets lastModifiedAt', () => {
     const { result } = renderHook(() => useCatalogue());
     const newMat: Material = {
-      id: 'new-1', nom: 'Nouveau', marque: 'Brand', categorie: 'Cat',
+      id: 'new-1',
+      nom: 'Nouveau',
+      marque: 'Brand',
+      categorie: 'Cat',
       references_fournisseurs: {},
     };
     let added: boolean;
-    act(() => { added = result.current.addMaterial(newMat); });
+    act(() => {
+      added = result.current.addMaterial(newMat);
+    });
     expect(added!).toBe(true);
     expect(result.current.materials).toHaveLength(2);
     expect(result.current.lastModifiedAt).not.toBeNull();
@@ -69,10 +79,15 @@ describe('useCatalogue', () => {
   it('addMaterial with targetFile uses that stem', () => {
     const { result } = renderHook(() => useCatalogue());
     const mat: Material = {
-      id: 'new-tf', nom: 'Test', marque: 'B', categorie: 'C',
+      id: 'new-tf',
+      nom: 'Test',
+      marque: 'B',
+      categorie: 'C',
       references_fournisseurs: {},
     };
-    act(() => { result.current.addMaterial(mat, 'catalogue.custom'); });
+    act(() => {
+      result.current.addMaterial(mat, 'catalogue.custom');
+    });
     expect(result.current.catalogueFiles).toContain('catalogue.custom');
   });
 
@@ -80,7 +95,9 @@ describe('useCatalogue', () => {
     const { result } = renderHook(() => useCatalogue());
     const dup: Material = { ...SEED_MATERIAL };
     let added: boolean;
-    act(() => { added = result.current.addMaterial(dup); });
+    act(() => {
+      added = result.current.addMaterial(dup);
+    });
     expect(added!).toBe(false);
     expect(result.current.materials).toHaveLength(1);
   });
@@ -96,7 +113,9 @@ describe('useCatalogue', () => {
 
   it('removeMaterial removes the material by id', () => {
     const { result } = renderHook(() => useCatalogue());
-    act(() => { result.current.removeMaterial('seed-1'); });
+    act(() => {
+      result.current.removeMaterial('seed-1');
+    });
     expect(result.current.materials).toHaveLength(0);
     expect(result.current.lastModifiedAt).not.toBeNull();
   });
@@ -106,7 +125,9 @@ describe('useCatalogue', () => {
     const imported: Material[] = [
       { id: 'imp-1', nom: 'Imported', marque: 'B', categorie: 'C', references_fournisseurs: {} },
     ];
-    act(() => { result.current.importCatalogue(imported); });
+    act(() => {
+      result.current.importCatalogue(imported);
+    });
     expect(result.current.materials).toHaveLength(1);
     expect(result.current.materials[0].id).toBe('imp-1');
     expect(result.current.lastModifiedAt).toBeNull();
@@ -116,9 +137,13 @@ describe('useCatalogue', () => {
   it('exportCatalogue calls exportCatalogueAsZip and resets reminder', () => {
     const { result } = renderHook(() => useCatalogue());
     // First mutate so lastModifiedAt is set
-    act(() => { result.current.updateMaterial({ ...SEED_MATERIAL, nom: 'Changed' }); });
+    act(() => {
+      result.current.updateMaterial({ ...SEED_MATERIAL, nom: 'Changed' });
+    });
     expect(result.current.lastModifiedAt).not.toBeNull();
-    act(() => { result.current.exportCatalogue(); });
+    act(() => {
+      result.current.exportCatalogue();
+    });
     expect(exportZipMock).toHaveBeenCalledOnce();
     expect(result.current.lastModifiedAt).toBeNull();
     expect(result.current.lastExportedAt).not.toBeNull();
@@ -127,10 +152,15 @@ describe('useCatalogue', () => {
   it('addMaterial without targetFile derives stem from categorie', () => {
     const { result } = renderHook(() => useCatalogue());
     const mat: Material = {
-      id: 'cat-derive', nom: 'Test', marque: 'B', categorie: 'Disjoncteur',
+      id: 'cat-derive',
+      nom: 'Test',
+      marque: 'B',
+      categorie: 'Disjoncteur',
       references_fournisseurs: {},
     };
-    act(() => { result.current.addMaterial(mat); });
+    act(() => {
+      result.current.addMaterial(mat);
+    });
     const files = result.current.catalogueFiles;
     expect(files.some((f) => f.includes('disjoncteur'))).toBe(true);
   });
@@ -164,9 +194,13 @@ describe('buildMaterialFromExtracted', () => {
   });
 
   it('sets materielelectrique ref to null when referenceMe is empty', () => {
-    const m = buildMaterialFromExtracted({ id: 'x', nom: 'X', marque: 'B', categorie: 'C', referenceMe: '' });
+    const m = buildMaterialFromExtracted({
+      id: 'x',
+      nom: 'X',
+      marque: 'B',
+      categorie: 'C',
+      referenceMe: '',
+    });
     expect(m.references_fournisseurs.materielelectrique).toBeNull();
   });
 });
-
-

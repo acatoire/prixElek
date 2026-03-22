@@ -1,4 +1,4 @@
-export default {
+ export default {
   semi: true,
   singleQuote: true,
   tabWidth: 2,
@@ -9,8 +9,5 @@ export default {
   useTabs: false,
   bracketSpacing: true,
   bracketSameLine: false,
-  vue: {
-    indent: 2,
-  },
 };
 

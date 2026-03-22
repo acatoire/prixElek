@@ -7,8 +7,12 @@ import { useBricodepotAuth } from './useBricodepotAuth';
 
 const VALID_COOKIES = 'JSESSIONID=abc123; DYN_USER_ID=xyz; other=value';
 
-beforeEach(() => { localStorage.clear(); });
-afterEach(() => { localStorage.clear(); });
+beforeEach(() => {
+  localStorage.clear();
+});
+afterEach(() => {
+  localStorage.clear();
+});
 
 describe('useBricodepotAuth', () => {
   it('starts disconnected when localStorage is empty', () => {
@@ -26,7 +30,9 @@ describe('useBricodepotAuth', () => {
 
   it('saveCookies persists trimmed value and marks connected', () => {
     const { result } = renderHook(() => useBricodepotAuth());
-    act(() => { result.current.saveCookies(`  ${VALID_COOKIES}  `); });
+    act(() => {
+      result.current.saveCookies(`  ${VALID_COOKIES}  `);
+    });
     expect(result.current.cookies).toBe(VALID_COOKIES);
     expect(result.current.isConnected).toBe(true);
     expect(localStorage.getItem('prixelek_bricodepot_cookies')).toBe(VALID_COOKIES);
@@ -35,10 +41,11 @@ describe('useBricodepotAuth', () => {
   it('clearCookies removes localStorage key and marks disconnected', () => {
     localStorage.setItem('prixelek_bricodepot_cookies', VALID_COOKIES);
     const { result } = renderHook(() => useBricodepotAuth());
-    act(() => { result.current.clearCookies(); });
+    act(() => {
+      result.current.clearCookies();
+    });
     expect(result.current.isConnected).toBe(false);
     expect(result.current.cookies).toBe('');
     expect(localStorage.getItem('prixelek_bricodepot_cookies')).toBeNull();
   });
 });
-

@@ -8,12 +8,19 @@ import { RexelLoginModal } from './RexelLoginModal';
 // Minimal valid JWT with ERPCustomerID for extractAccountId
 const ACCOUNT = '987654';
 const PAYLOAD = btoa(JSON.stringify({ ERPCustomerID: { accountNumber: ACCOUNT } }))
-  .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  .replace(/=/g, '')
+  .replace(/\+/g, '-')
+  .replace(/\//g, '_');
 const VALID_TOKEN = `hdr.${PAYLOAD}.sig`;
 
 const EMPTY_PROPS = {
-  currentToken: '', currentBranchId: '', currentZipcode: '', currentCity: '',
-  onSave: vi.fn(), onClear: vi.fn(), onClose: vi.fn(),
+  currentToken: '',
+  currentBranchId: '',
+  currentZipcode: '',
+  currentCity: '',
+  onSave: vi.fn(),
+  onClear: vi.fn(),
+  onClose: vi.fn(),
 };
 
 describe('RexelLoginModal', () => {
@@ -23,7 +30,15 @@ describe('RexelLoginModal', () => {
   });
 
   it('shows "Connecté" badge when a token is present', () => {
-    render(<RexelLoginModal {...EMPTY_PROPS} currentToken={VALID_TOKEN} currentBranchId="4413" currentZipcode="44880" currentCity="SAUTRON" />);
+    render(
+      <RexelLoginModal
+        {...EMPTY_PROPS}
+        currentToken={VALID_TOKEN}
+        currentBranchId="4413"
+        currentZipcode="44880"
+        currentCity="SAUTRON"
+      />
+    );
     expect(screen.getByText(/Connecté/)).toBeInTheDocument();
   });
 
@@ -74,7 +89,17 @@ describe('RexelLoginModal', () => {
   it('calls onClear and onClose when Se déconnecter is clicked', () => {
     const onClear = vi.fn();
     const onClose = vi.fn();
-    render(<RexelLoginModal {...EMPTY_PROPS} currentToken={VALID_TOKEN} currentBranchId="4413" currentZipcode="44880" currentCity="SAUTRON" onClear={onClear} onClose={onClose} />);
+    render(
+      <RexelLoginModal
+        {...EMPTY_PROPS}
+        currentToken={VALID_TOKEN}
+        currentBranchId="4413"
+        currentZipcode="44880"
+        currentCity="SAUTRON"
+        onClear={onClear}
+        onClose={onClose}
+      />
+    );
     fireEvent.click(screen.getByText(/Se déconnecter/));
     expect(onClear).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledOnce();
@@ -91,7 +116,9 @@ describe('RexelLoginModal', () => {
     const onSave = vi.fn();
     const onClose = vi.fn();
     render(<RexelLoginModal {...EMPTY_PROPS} onSave={onSave} onClose={onClose} />);
-    fireEvent.change(screen.getByPlaceholderText(/eyJ/), { target: { value: `Bearer ${VALID_TOKEN}` } });
+    fireEvent.change(screen.getByPlaceholderText(/eyJ/), {
+      target: { value: `Bearer ${VALID_TOKEN}` },
+    });
     fireEvent.change(screen.getByPlaceholderText('4413'), { target: { value: '4413' } });
     fireEvent.change(screen.getByPlaceholderText('44880'), { target: { value: '44880' } });
     fireEvent.change(screen.getByPlaceholderText('SAUTRON'), { target: { value: 'SAUTRON' } });
@@ -99,4 +126,3 @@ describe('RexelLoginModal', () => {
     expect(onSave.mock.calls[0][0].token).toBe(VALID_TOKEN);
   });
 });
-

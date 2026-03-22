@@ -4,4 +4,3 @@ declare module 'virtual:*' {
   const mod: Record<string, any>;
   export default mod;
 }
-

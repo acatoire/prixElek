@@ -49,8 +49,9 @@ export async function extractProductFromUrl(
     timeout: config.requestTimeoutMs,
   });
 
-  const html = typeof response.data === 'string'
-    ? response.data
-    : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
+  const html =
+    typeof response.data === 'string'
+      ? response.data
+      : new TextDecoder('utf-8').decode(response.data as ArrayBuffer);
   return extractProductFromHtml(html, url);
 }

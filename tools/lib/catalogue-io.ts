@@ -37,8 +37,7 @@ export async function readCatalogue(
   }
 
   throw new Error(
-    `[catalogue-io] Invalid catalogue file ${filePath}: ` +
-      `expected a JSON array at the root`
+    `[catalogue-io] Invalid catalogue file ${filePath}: ` + `expected a JSON array at the root`
   );
 }
 
@@ -79,4 +78,3 @@ export function addMaterialToCatalogue(catalogue: Catalog, material: Material): 
   catalogue.push(material);
   return true;
 }
-
