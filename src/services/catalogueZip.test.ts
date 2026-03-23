@@ -84,9 +84,9 @@ describe('exportCatalogueAsZip', () => {
     vi.restoreAllMocks();
     // @ts-expect-error — clean up node global stubs
     delete globalThis.URL;
-    // @ts-expect-error
+    // @ts-expect-error — clean up node global stubs
     delete globalThis.document;
-    // @ts-expect-error
+    // @ts-expect-error — clean up node global stubs
     delete globalThis.Blob;
   });
 
@@ -104,6 +104,25 @@ describe('exportCatalogueAsZip', () => {
 
   it('appends .json extension if not already present', () => {
     exportCatalogueAsZip([MAT_A]);
+    expect(clickSpy).toHaveBeenCalledOnce();
+  });
+
+  it('does not double-append .json when stem already ends in .json', () => {
+    // Exercises the true branch: stem.endsWith('.json') ? stem : `${stem}.json`
+    const matWithJsonStem: typeof MAT_A = {
+      ...MAT_A,
+      id: 'mat-json-stem',
+      _sourceFile: 'catalogue.prises.json',
+    };
+    expect(() => exportCatalogueAsZip([matWithJsonStem])).not.toThrow();
+    expect(clickSpy).toHaveBeenCalledOnce();
+  });
+
+  it('groups multiple materials with the same stem into one file', () => {
+    // Exercises the false branch of: if (!groups.has(stem))
+    const mat1 = { ...MAT_A, id: 'grp-1', _sourceFile: 'catalogue.prises' };
+    const mat2 = { ...MAT_A, id: 'grp-2', _sourceFile: 'catalogue.prises' };
+    expect(() => exportCatalogueAsZip([mat1, mat2])).not.toThrow();
     expect(clickSpy).toHaveBeenCalledOnce();
   });
 });

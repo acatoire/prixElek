@@ -801,4 +801,203 @@ describe('CommandeTab', () => {
     expect(createObjectURL).toHaveBeenCalledOnce();
     vi.restoreAllMocks();
   });
+
+  // ── buildEmailBody with cable + known price (lines 64-72 and 85-92) ───────
+
+  it('exports email with cable item that has a known price (lot-based)', () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:fake');
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(createObjectURL);
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(vi.fn());
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+      tag === 'a'
+        ? ({ href: '', download: '', click: vi.fn() } as unknown as HTMLElement)
+        : realCreate(tag)
+    );
+    const cablePrice: PriceMatrix = {
+      'cable-1': {
+        materielelectrique: {
+          status: 'success',
+          data: {
+            prix_ht: 0.75,
+            stock: 1,
+            unite: 'ml',
+            fetchedAt: new Date().toISOString(),
+            tiers: [],
+          },
+          errorMessage: null,
+        },
+      },
+    };
+    render(
+      <CommandeTab
+        materials={[CABLE_MAT]}
+        prices={cablePrice}
+        commande={makeCommande(['cable-1'], { 'cable-1': 30 })}
+        scanning={false}
+        onScan={vi.fn()}
+        onStop={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByTitle(/Exporter la commande Matériel/));
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    vi.restoreAllMocks();
+  });
+
+  // ── surMesure cable (lot_metres: null) → email shows "sur mesure" (line 69-70) ──
+
+  it('exports email with surMesure cable (lot_metres null)', () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:fake');
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(createObjectURL);
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(vi.fn());
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+      tag === 'a'
+        ? ({ href: '', download: '', click: vi.fn() } as unknown as HTMLElement)
+        : realCreate(tag)
+    );
+    const surMesureCable: Material = {
+      ...CABLE_MAT,
+      cable: {
+        unite_base: 'ml',
+        packaging: {
+          materielelectrique: { lot_metres: null, prix_base: 'metre' },
+        },
+      },
+    };
+    const surMesurePrice: PriceMatrix = {
+      'cable-1': {
+        materielelectrique: {
+          status: 'success',
+          data: {
+            prix_ht: 1.2,
+            stock: 1,
+            unite: 'ml',
+            fetchedAt: new Date().toISOString(),
+            tiers: [],
+          },
+          errorMessage: null,
+        },
+      },
+    };
+    render(
+      <CommandeTab
+        materials={[surMesureCable]}
+        prices={surMesurePrice}
+        commande={makeCommande(['cable-1'], { 'cable-1': 15 })}
+        scanning={false}
+        onScan={vi.fn()}
+        onStop={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByTitle(/Exporter la commande Matériel/));
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    vi.restoreAllMocks();
+  });
+
+  // ── Import order non-Error alert (line 231) ────────────────────────────────
+
+  it('shows alert with String(err) when a non-Error is thrown during import', () => {
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+    const importOrder = vi.fn().mockImplementation(() => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw 'string-error';
+    });
+    render(
+      <CommandeTab
+        materials={[MAT]}
+        prices={EMPTY_PRICES}
+        commande={{ ...makeCommande(), importOrder }}
+        scanning={false}
+        onScan={vi.fn()}
+        onStop={vi.fn()}
+      />
+    );
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const readAsTextMock = vi.fn().mockImplementation(function (this: FileReader) {
+      Object.defineProperty(this, 'result', { value: '{}' });
+      this.onload?.({ target: this } as ProgressEvent<FileReader>);
+    });
+    vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(readAsTextMock);
+    fireEvent.change(input, {
+      target: { files: [new File(['{}'], 'order.json', { type: 'application/json' })] },
+    });
+    expect(alertMock).toHaveBeenCalledWith('Import échoué : string-error');
+    alertMock.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  // ── Cable quantity input parseInt → 0 → fallback to 1 (line 449) ──────────
+
+  it('clamps cable quantity to 1 when an empty string is entered', () => {
+    const setQuantity = vi.fn();
+    const cableWithMeRef: Material = {
+      ...CABLE_MAT,
+      references_fournisseurs: { materielelectrique: 'REF-CABLE', rexel: null, bricodepot: null },
+    };
+    render(
+      <CommandeTab
+        materials={[cableWithMeRef]}
+        prices={EMPTY_PRICES}
+        commande={{ ...makeCommande(['cable-1'], { 'cable-1': 5 }), setQuantity }}
+        scanning={false}
+        onScan={vi.fn()}
+        onStop={vi.fn()}
+      />
+    );
+    const numInput = screen.getByRole('spinbutton') as HTMLInputElement;
+    // Simulate clearing the field — target.value is '' → parseInt('',10) = NaN → || 1
+    fireEvent.change(numInput, { target: { value: '' } });
+    expect(setQuantity).toHaveBeenCalledWith('cable-1', 1);
+  });
+
+  // ── Cable success price with only one supplier → !result → shows — (line 504-505) ──
+
+  it('shows — for cable cell when comparison result is absent (only 1 supplier has price)', () => {
+    // Only materielelectrique has a price → compareCableSuppliers returns empty
+    // → result is undefined → line 504 branch hit
+    const singlePriceCable: Material = {
+      ...CABLE_MAT,
+      references_fournisseurs: {
+        materielelectrique: 'REF-CABLE',
+        rexel: 'RX-CABLE',
+        bricodepot: null,
+      },
+      cable: {
+        unite_base: 'ml',
+        packaging: {
+          materielelectrique: { lot_metres: 100, prix_base: 'metre' },
+          rexel: { lot_metres: 50, prix_base: 'lot' },
+        },
+      },
+    };
+    const singlePrice: PriceMatrix = {
+      'cable-1': {
+        materielelectrique: {
+          status: 'success',
+          data: {
+            prix_ht: 0.75,
+            stock: 1,
+            unite: 'ml',
+            fetchedAt: new Date().toISOString(),
+            tiers: [],
+          },
+          errorMessage: null,
+        },
+        // rexel has no price yet → compareCableSuppliers sees only 1 valid result
+      },
+    };
+    render(
+      <CommandeTab
+        materials={[singlePriceCable]}
+        prices={singlePrice}
+        commande={makeCommande(['cable-1'], { 'cable-1': 30 })}
+        scanning={false}
+        onScan={vi.fn()}
+        onStop={vi.fn()}
+      />
+    );
+    // The Rexel column has a ref but no comparison result → renders —
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
 });

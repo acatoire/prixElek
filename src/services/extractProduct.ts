@@ -93,9 +93,9 @@ export function extractTiersFromHtml(html: string): PriceTier[] | undefined {
     const minQty = parseInt(qtyMatch[1], 10);
 
     // HT price from ex-vat span: "1,1333 €" or "1,1333€" → 1.1333
-    const htMatch = row.match(/class="ex-vat"[^>]*>([\d,\.]+)\s*€/i);
+    const htMatch = row.match(/class="ex-vat"[^>]*>([\d,.]+)\s*€/i);
     // TTC price from inc-vat span
-    const ttcMatch = row.match(/class="inc-vat"[^>]*>([\d,\.]+)\s*€/i);
+    const ttcMatch = row.match(/class="inc-vat"[^>]*>([\d,.]+)\s*€/i);
 
     if (!htMatch && !ttcMatch) continue;
 

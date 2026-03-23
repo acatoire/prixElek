@@ -70,7 +70,7 @@ async function main(): Promise<void> {
 
   section('6. Inline JS price variables');
   const jsVars =
-    html.match(/(?:var|const|let)\s+\w*(?:price|prix|product|sku)\w*\s*=\s*['"`\{][^;]{0,200}/gi) ??
+    html.match(/(?:var|const|let)\s+\w*(?:price|prix|product|sku)\w*\s*=\s*['"`{][^;]{0,200}/gi) ??
     [];
   jsVars.slice(0, 8).forEach((v) => console.log(v.slice(0, 200)));
 
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   console.log(nuxt.slice(0, 300));
 
   section('8. Raw price text around "€"');
-  const euroMatches = html.match(/.{0,40}\d+[,\.]\d{2}\s*€.{0,20}/g) ?? [];
+  const euroMatches = html.match(/.{0,40}\d+[,.]\d{2}\s*€.{0,20}/g) ?? [];
   euroMatches.slice(0, 8).forEach((m) => console.log(m.replace(/\s+/g, ' ').trim()));
 }
 

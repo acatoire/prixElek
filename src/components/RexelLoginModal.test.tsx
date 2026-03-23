@@ -125,4 +125,41 @@ describe('RexelLoginModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Enregistrer/ }));
     expect(onSave.mock.calls[0][0].token).toBe(VALID_TOKEN);
   });
+
+  it('does not call onClose when a non-Escape key is pressed', () => {
+    const onClose = vi.fn();
+    render(<RexelLoginModal {...EMPTY_PROPS} onClose={onClose} />);
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('does not call onClose when clicking inside the modal panel', () => {
+    const onClose = vi.fn();
+    render(<RexelLoginModal {...EMPTY_PROPS} onClose={onClose} />);
+    fireEvent.click(screen.getByText(/Connexion Rexel/));
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('shows invalid token error message when draftClean has no accountId', () => {
+    // Exercises the false branch of: draftAccountId ? ... : <error msg>
+    render(<RexelLoginModal {...EMPTY_PROPS} />);
+    // Type something that looks like a token but has no ERPCustomerID
+    const badPayload = btoa(JSON.stringify({ exp: 9999 })).replace(/=/g, '');
+    fireEvent.change(screen.getByPlaceholderText(/eyJ/), {
+      target: { value: `hdr.${badPayload}.sig` },
+    });
+    expect(screen.getByText(/Token invalide/)).toBeInTheDocument();
+  });
+
+  it('does not call onSave when required fields are missing', () => {
+    // Exercises the early-return guard in handleSave (line 45)
+    const onSave = vi.fn();
+    render(<RexelLoginModal {...EMPTY_PROPS} onSave={onSave} />);
+    // Only fill the token — leave branch/zip/city empty
+    fireEvent.change(screen.getByPlaceholderText(/eyJ/), { target: { value: VALID_TOKEN } });
+    const btn = screen.getByRole('button', { name: /Enregistrer/ });
+    // Button should still be disabled because branch/zip/city are empty
+    expect(btn).toBeDisabled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
 });

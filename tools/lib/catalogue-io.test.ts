@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * tools/lib/catalogue-io.test.ts
  */
@@ -5,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Catalog, Material } from '../../src/types/material';
 import type { ExtractedProduct } from './extract-product-from-page';
+import type { readFile as ReadFileFn } from 'fs/promises';
 import {
   cataloguePath,
   buildMaterial,
@@ -104,7 +106,7 @@ describe('readCatalogue', () => {
   it('returns an empty catalogue when file does not exist', async () => {
     const result = await readCatalogue('/some/path.json', {
       existsSync: () => false,
-      readFile: vi.fn() as any,
+      readFile: vi.fn() as unknown as typeof ReadFileFn,
     });
     expect(result).toEqual([]);
   });
@@ -112,7 +114,9 @@ describe('readCatalogue', () => {
   it('parses and returns the catalogue from file', async () => {
     const result = await readCatalogue('/some/path.json', {
       existsSync: () => true,
-      readFile: vi.fn().mockResolvedValue(JSON.stringify([MATERIAL])) as any,
+      readFile: vi
+        .fn()
+        .mockResolvedValue(JSON.stringify([MATERIAL])) as unknown as typeof ReadFileFn,
     });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe(MATERIAL.id);

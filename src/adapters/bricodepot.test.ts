@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * src/adapters/bricodepot.test.ts
  *
@@ -5,7 +6,7 @@
  * All HTTP calls are intercepted by MSW — no real network traffic.
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { BricodepotAdapter, BRICODEPOT_VAT_RATE, type BricodepotConfig } from './bricodepot';
@@ -171,6 +172,70 @@ describe('BricodepotAdapter', () => {
     // No handler registered → MSW will throw
     server.use(http.get(PRODUCT_URL, () => HttpResponse.error()));
     await expect(adapter.getPrice(REF)).rejects.toBeInstanceOf(FetchError);
+  });
+
+  it('returns stock=0 when "Rupture de stock" text is present', async () => {
+    const html =
+      makeHtml({ price: 50.0 }).replace('bd-Stock--available', 'bd-Stock--available') +
+      '<span>Rupture de stock</span>';
+    mockPage(html);
+    const result = await adapter.getPrice(REF);
+    expect(result.stock).toBe(0);
+  });
+
+  it('returns stock=0 when "IndisponibleEnLigne" text is present', async () => {
+    const html = makeHtml({ price: 50.0 }) + '<span>IndisponibleEnLigne</span>';
+    mockPage(html);
+    const result = await adapter.getPrice(REF);
+    expect(result.stock).toBe(0);
+  });
+
+  it('uses /api/bricodepot-page path when window is defined (browser env)', async () => {
+    // Simulate browser environment by defining globalThis.window
+    (globalThis as Record<string, unknown>).window = {};
+    const browserAdapter = new BricodepotAdapter({
+      delayBetweenRequestsMs: 0,
+      requestTimeoutMs: 5_000,
+    });
+    // Register handler for the browser proxy URL
+    server.use(
+      http.get(
+        `http://localhost/api/bricodepot-page`,
+        () => HttpResponse.text(makeHtml({ price: 99.0 }), { status: 200 }),
+        { once: true }
+      )
+    );
+    // Mock axios to intercept the relative URL
+    const axiosMod = await import('axios');
+    const getSpy = vi.spyOn(axiosMod.default, 'get').mockResolvedValueOnce({
+      data: makeHtml({ price: 99.0 }),
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {},
+    });
+    const result = await browserAdapter.getPrice(REF);
+    expect(result.prix_ttc).toBe(99.0);
+    getSpy.mockRestore();
+    delete (globalThis as Record<string, unknown>).window;
+  });
+
+  it('injects Cookie header in Node when cookies are provided', async () => {
+    const adapterWithCookies = new BricodepotAdapter({
+      delayBetweenRequestsMs: 0,
+      requestTimeoutMs: 5_000,
+      cookies: 'JSESSIONID=abc123',
+    });
+    let receivedCookie: string | null = null;
+    server.use(
+      http.get(PRODUCT_URL, ({ request }) => {
+        receivedCookie = request.headers.get('cookie');
+        return HttpResponse.text(makeHtml({ price: 75.0 }), { status: 200 });
+      })
+    );
+    const result = await adapterWithCookies.getPrice(REF);
+    expect(result.prix_ttc).toBe(75.0);
+    expect(receivedCookie).toBe('JSESSIONID=abc123');
   });
 
   // ── parseHtml unit tests ─────────────────────────────────────────────────

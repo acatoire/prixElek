@@ -62,11 +62,6 @@ export function useExportReminder(
     return () => clearInterval(id);
   }, [lastModifiedAt, lastExportedAt]);
 
-  // Hide immediately when modifications are cleared (export happened)
-  useEffect(() => {
-    if (lastModifiedAt === null) setShowReminder(false);
-  }, [lastModifiedAt]);
-
   const dismissReminder = () => {
     setShowReminder(false);
     dismissedAtRef.current = Date.now();

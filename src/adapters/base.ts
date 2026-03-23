@@ -22,7 +22,6 @@ export abstract class SupplierAdapter {
    * Authenticate against the supplier API and persist the session token.
    * Not required for suppliers with public prices.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async authenticate(
     _login: string,
     _password: string

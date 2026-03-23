@@ -31,10 +31,12 @@ function makeJsonFile(): File {
   );
 }
 
+import type { Catalog } from '@/types/material';
+
 describe('CatalogueToolbar', () => {
-  let onImport: ReturnType<typeof vi.fn>;
-  let onExport: ReturnType<typeof vi.fn>;
-  let onAddFromUrl: ReturnType<typeof vi.fn>;
+  let onImport: (items: Catalog) => void;
+  let onExport: () => void;
+  let onAddFromUrl: () => void;
 
   beforeEach(() => {
     onImport = vi.fn();
@@ -110,5 +112,65 @@ describe('CatalogueToolbar', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [] } });
     expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it('shows alert with String(err) when a non-Error is thrown during import', async () => {
+    const { importCatalogueFromJson } = await import('@/services/catalogueZip');
+    vi.mocked(importCatalogueFromJson).mockImplementationOnce(() => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw 'string-error';
+    });
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = makeJsonFile();
+    const readAsArrayBufferMock = vi.fn().mockImplementation(function (this: FileReader) {
+      const result = new TextEncoder().encode('[]').buffer;
+      Object.defineProperty(this, 'result', { value: result });
+      this.onload?.({ target: this } as ProgressEvent<FileReader>);
+    });
+    vi.spyOn(FileReader.prototype, 'readAsArrayBuffer').mockImplementation(readAsArrayBufferMock);
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(alertMock).toHaveBeenCalledWith('Import échoué : string-error');
+    alertMock.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  it('shows alert with err.message when an Error is thrown during import', async () => {
+    const { importCatalogueFromJson } = await import('@/services/catalogueZip');
+    vi.mocked(importCatalogueFromJson).mockImplementationOnce(() => {
+      throw new Error('bad format');
+    });
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = makeJsonFile();
+    const readAsArrayBufferMock = vi.fn().mockImplementation(function (this: FileReader) {
+      const result = new TextEncoder().encode('[]').buffer;
+      Object.defineProperty(this, 'result', { value: result });
+      this.onload?.({ target: this } as ProgressEvent<FileReader>);
+    });
+    vi.spyOn(FileReader.prototype, 'readAsArrayBuffer').mockImplementation(readAsArrayBufferMock);
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(alertMock).toHaveBeenCalledWith('Import échoué : bad format');
+    alertMock.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  it('import button click is safe when fileInputRef.current is null', () => {
+    // Exercises the ?. safe-nav: fileInputRef.current?.click()
+    render(
+      <CatalogueToolbar onImport={onImport} onExport={onExport} onAddFromUrl={onAddFromUrl} />
+    );
+    const importBtn = screen.getByTitle(/Importer/);
+    // Remove the hidden input so the ref target is gone from the DOM
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    input.remove();
+    // Clicking must not throw even though fileInputRef.current is now stale
+    expect(() => fireEvent.click(importBtn)).not.toThrow();
   });
 });

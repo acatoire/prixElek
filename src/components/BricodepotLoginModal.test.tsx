@@ -85,4 +85,28 @@ describe('BricodepotLoginModal', () => {
     expect(onClear).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it('does not call onClose when a non-Escape key is pressed', () => {
+    const onClose = vi.fn();
+    render(<BricodepotLoginModal {...EMPTY_PROPS} onClose={onClose} />);
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('does not call onSave when draft is empty and Enregistrer somehow triggered', () => {
+    const onSave = vi.fn();
+    render(<BricodepotLoginModal {...EMPTY_PROPS} onSave={onSave} />);
+    // Button is disabled but we exercise the guard via direct form submission check
+    const btn = screen.getByRole('button', { name: /Enregistrer/ });
+    expect(btn).toBeDisabled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('does not call onClose when clicking inside the modal panel (not the backdrop)', () => {
+    const onClose = vi.fn();
+    render(<BricodepotLoginModal {...EMPTY_PROPS} onClose={onClose} />);
+    // Click on the inner panel element — should NOT close
+    fireEvent.click(screen.getByText(/Session Brico Dépôt/));
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

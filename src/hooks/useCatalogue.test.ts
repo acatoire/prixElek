@@ -164,6 +164,67 @@ describe('useCatalogue', () => {
     const files = result.current.catalogueFiles;
     expect(files.some((f) => f.includes('disjoncteur'))).toBe(true);
   });
+
+  it('addMaterial without targetFile uses nom when categorie is empty', () => {
+    const { result } = renderHook(() => useCatalogue());
+    const mat: Material = {
+      id: 'nom-derive',
+      nom: 'Mon Câble Spécial',
+      marque: 'B',
+      categorie: '',
+      references_fournisseurs: {},
+    };
+    act(() => {
+      result.current.addMaterial(mat);
+    });
+    const files = result.current.catalogueFiles;
+    // stem should be derived from nom since categorie is empty
+    expect(files.some((f) => f.includes('mon-cable') || f.includes('mon-c'))).toBe(true);
+  });
+
+  it('fileCategories does not duplicate categories for the same file', () => {
+    const { result } = renderHook(() => useCatalogue());
+    // Add two materials with same categorie in same file
+    const mat1: Material = {
+      id: 'dup-cat-1',
+      nom: 'Item1',
+      marque: 'B',
+      categorie: 'Prise de courant',
+      references_fournisseurs: {},
+    };
+    const mat2: Material = {
+      id: 'dup-cat-2',
+      nom: 'Item2',
+      marque: 'B',
+      categorie: 'Prise de courant',
+      references_fournisseurs: {},
+    };
+    act(() => {
+      result.current.addMaterial(mat1, 'catalogue.prises');
+      result.current.addMaterial(mat2, 'catalogue.prises');
+    });
+    const cats = result.current.fileCategories.get('catalogue.prises');
+    // Category should only appear once despite two materials with same category
+    const count = cats?.filter((c) => c === 'Prise de courant').length ?? 0;
+    expect(count).toBe(1);
+  });
+
+  it('updateMaterial leaves non-matching materials unchanged', () => {
+    const { result } = renderHook(() => useCatalogue());
+    // seed-1 is the only material; update something with a different id
+    act(() => {
+      result.current.updateMaterial({
+        id: 'does-not-exist',
+        nom: 'Ghost',
+        marque: 'X',
+        categorie: 'Y',
+        references_fournisseurs: {},
+      });
+    });
+    // seed-1 should be untouched
+    expect(result.current.materials[0].id).toBe('seed-1');
+    expect(result.current.materials[0].nom).toBe('Prise Test');
+  });
 });
 
 // ── buildMaterialFromExtracted ────────────────────────────────────────────────

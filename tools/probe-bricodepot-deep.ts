@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 
   // Show full context around each data-price div
   console.log('=== data-price contexts ===');
-  const re = /[\s\S]{0,300}data-price="[\d\.]+[\s\S]{0,300}/g;
+  const re = /[\s\S]{0,300}data-price="[\d.]+[\s\S]{0,300}/g;
   const matches = html.match(re) ?? [];
   matches.slice(0, 3).forEach((m, i) => {
     console.log(`\n--- match ${i} ---`);

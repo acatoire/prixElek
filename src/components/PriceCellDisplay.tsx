@@ -6,7 +6,7 @@
  * For cable materials (isCableMaterial), shows the per-lot price + lot size.
  * For tiered pricing, shows a 🧮 icon with a hover tooltip.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import type { PriceCell } from '@/types/price';
 import type { PriceTier } from '@/types/price';
 import type { Material } from '@/types/material';
@@ -92,6 +92,9 @@ export function PriceCellDisplay({
   supplierId,
   quantity,
 }: PriceCellDisplayProps): React.ReactElement {
+  // Capture render time once — must be before any early returns (rules-of-hooks)
+  const [now] = useState(() => Date.now());
+
   if (!cell || cell.status === 'idle') {
     return <span className="text-gray-300 select-none">—</span>;
   }
@@ -127,7 +130,7 @@ export function PriceCellDisplay({
   const inStock = (cell.data?.stock ?? 0) > 0;
 
   const fetchedAt = cell.data?.fetchedAt;
-  const ageMs = fetchedAt ? Date.now() - new Date(fetchedAt).getTime() : 0;
+  const ageMs = fetchedAt ? now - new Date(fetchedAt).getTime() : 0;
   const isCached = ageMs > 60_000;
   const ageLabel = isCached
     ? ageMs < 3_600_000

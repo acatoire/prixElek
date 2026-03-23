@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * tools/lib/extract-product-from-page.test.ts
  *
@@ -5,7 +6,7 @@
  * HTTP calls in extractProductFromUrl are intercepted by MSW.
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import {
@@ -209,5 +210,22 @@ describe('extractProductFromUrl', () => {
   it('propagates network errors', async () => {
     server.use(http.get(PRODUCT_URL, () => HttpResponse.error()));
     await expect(extractProductFromUrl(PRODUCT_URL, DEFAULT_SCRAPING_CONFIG)).rejects.toThrow();
+  });
+
+  it('handles string response.data without TextDecoder', async () => {
+    // Exercises the typeof response.data === 'string' branch (line 53)
+    // MSW returns text; axios with responseType 'arraybuffer' normally gives ArrayBuffer,
+    // but we mock axios so response.data is already a string.
+    const axiosMod = await import('axios');
+    const getSpy = vi.spyOn(axiosMod.default, 'get').mockResolvedValueOnce({
+      data: makeHtml(),
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {},
+    });
+    const result = await extractProductFromUrl(PRODUCT_URL, DEFAULT_SCRAPING_CONFIG);
+    expect(result.id).toBe('LEG067128');
+    getSpy.mockRestore();
   });
 });

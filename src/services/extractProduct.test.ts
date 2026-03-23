@@ -179,6 +179,18 @@ describe('extractProductFromHtml', () => {
     expect(() => extractProductFromHtml(makeHtml({ name: '' }), PRODUCT_URL)).toThrow('no name');
   });
 
+  it('throws when product name is undefined (covers product.name ?? "" branch)', () => {
+    // name: undefined → product.name ?? '' = '' → triggers "no name" throw
+    const html = makeHtml({ name: undefined as unknown as string });
+    expect(() => extractProductFromHtml(html, PRODUCT_URL)).toThrow('no name');
+  });
+
+  it('returns product without tiers when no #decreasing-prices section exists', () => {
+    // Exercises the ...(tiers ? {tiers} : {}) false branch (line 210)
+    const result = extractProductFromHtml(makeHtml(), PRODUCT_URL);
+    expect(result.tiers).toBeUndefined();
+  });
+
   it('throws when sku and mpn are both absent', () => {
     const html = makeHtml({
       sku: undefined as unknown as string,
@@ -278,6 +290,84 @@ describe('extractTiersFromHtml', () => {
     ]);
     const tiers = extractTiersFromHtml(html);
     expect(tiers!.map((t) => t.minQty)).toEqual([1, 20, 50]);
+  });
+
+  it('derives prix_ht from prix_ttc when only inc-vat span is present (no ex-vat)', () => {
+    // Exercises the else branch: htMatch is null, ttcMatch is not null (lines 111-112)
+    const html = `<html><body>
+      <div id="decreasing-prices">
+        <table role="presentation">
+          <thead><tr><td>Quantité</td><td>Prix unitaire</td><td>Vous gagnez</td></tr></thead>
+          <tbody>
+            <tr>
+              <td>1+</td>
+              <td><span class="inc-vat">1,20€</span></td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </body></html>`;
+    const tiers = extractTiersFromHtml(html);
+    expect(tiers).toHaveLength(1);
+    expect(tiers![0].prix_ttc).toBeCloseTo(1.2);
+    expect(tiers![0].prix_ht).toBeGreaterThan(0);
+  });
+
+  it('computes prix_ttc from prix_ht when only ex-vat span is present (no inc-vat)', () => {
+    // Exercises the false branch of ttcMatch (line 107-109): htMatch present, ttcMatch absent
+    const html = `<html><body>
+      <div id="decreasing-prices">
+        <table role="presentation">
+          <thead><tr><td>Quantité</td><td>Prix unitaire</td><td>Vous gagnez</td></tr></thead>
+          <tbody>
+            <tr>
+              <td>1+</td>
+              <td><span class="ex-vat">1,00€</span></td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </body></html>`;
+    const tiers = extractTiersFromHtml(html);
+    expect(tiers).toHaveLength(1);
+    expect(tiers![0].prix_ht).toBeCloseTo(1.0);
+    expect(tiers![0].prix_ttc).toBeGreaterThan(1.0); // computed from HT
+  });
+
+  it('returns undefined when rows exist but none have valid qty+price data', () => {
+    // Exercises tiers.length === 0 → return undefined (line 122)
+    const html = `<html><body>
+      <div id="decreasing-prices">
+        <table role="presentation">
+          <thead><tr><td>Quantité</td><td>Prix unitaire</td><td>Vous gagnez</td></tr></thead>
+          <tbody>
+            <tr><td>no-qty-here</td><td>no price</td><td>-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </body></html>`;
+    expect(extractTiersFromHtml(html)).toBeUndefined();
+  });
+
+  it('skips rows that have a qty but neither ex-vat nor inc-vat spans', () => {
+    // Exercises the `if (!htMatch && !ttcMatch) continue` branch (line 100)
+    const html = `<html><body>
+      <div id="decreasing-prices">
+        <table role="presentation">
+          <thead><tr><td>Quantité</td><td>Prix unitaire</td><td>Vous gagnez</td></tr></thead>
+          <tbody>
+            <tr><td>1+</td><td>no spans here</td><td>-</td></tr>
+            <tr><td>20+</td><td><span class="ex-vat">1,00€</span></td><td>-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </body></html>`;
+    const tiers = extractTiersFromHtml(html);
+    // Row 1 is skipped; row 2 is parsed
+    expect(tiers).toHaveLength(1);
+    expect(tiers![0].minQty).toBe(20);
   });
 
   it('parses three tiers', () => {

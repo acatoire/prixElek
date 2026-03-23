@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   section('4. Inline JS product/price variables');
   const jsVars =
     html.match(
-      /(?:var|const|let)\s+\w*(?:product|price|prix|sku|ref)\w*\s*=\s*['"`\{][\s\S]{0,300}/gi
+      /(?:var|const|let)\s+\w*(?:product|price|prix|sku|ref)\w*\s*=\s*['"`{][\s\S]{0,300}/gi
     ) ?? [];
   jsVars.slice(0, 8).forEach((v) => console.log(v.slice(0, 200)));
 

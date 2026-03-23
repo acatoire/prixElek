@@ -3,6 +3,14 @@
 > AI assistant guidelines. Stay **KISS** (Keep It Simple, Stupid).
 > Generate code files only — no extra report files unless explicitly requested.
 
+## Development OS
+
+- Primary: Windows 10/11
+
+Be careful to use windows command line syntax in scripts and documentation, and test on Windows to avoid cross-platform
+issues. On powershell, use `Get-ChildItem` instead of `ls` or `dir`, and `Copy-Item` instead of `cp`. Avoid
+Unix-specific commands like `rm`, `tail`,  or `mv`.
+
 ---
 
 ## Stack

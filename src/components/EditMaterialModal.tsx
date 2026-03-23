@@ -3,7 +3,7 @@
  *
  * Modal to edit or delete a catalogue item.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useReducer } from 'react';
 import type { Material } from '@/types/material';
 import { SUPPLIERS as SUPPLIER_DEFS } from '@/config/suppliers';
 
@@ -26,24 +26,56 @@ export function EditMaterialModal({
   onDelete,
   onClose,
 }: EditMaterialModalProps): React.ReactElement | null {
-  const [nom, setNom] = useState('');
-  const [marque, setMarque] = useState('');
-  const [categorie, setCategorie] = useState('');
-  const [refs, setRefs] = useState<Record<string, string>>({});
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  type FormState = {
+    nom: string;
+    marque: string;
+    categorie: string;
+    refs: Record<string, string>;
+    confirmDelete: boolean;
+  };
+  type FormAction =
+    | { type: 'reset'; material: Material }
+    | { type: 'setNom'; value: string }
+    | { type: 'setMarque'; value: string }
+    | { type: 'setCategorie'; value: string }
+    | { type: 'setRef'; supplier: string; value: string }
+    | { type: 'setConfirmDelete'; value: boolean };
 
-  useEffect(() => {
-    if (!material) return;
-    setNom(material.nom);
-    setMarque(material.marque);
-    setCategorie(material.categorie);
-    const r: Record<string, string> = {};
-    for (const s of SUPPLIERS) {
-      r[s] = material.references_fournisseurs[s] ?? '';
+  const buildRefs = (m: Material): Record<string, string> =>
+    Object.fromEntries(SUPPLIERS.map((s) => [s, m.references_fournisseurs[s] ?? '']));
+
+  const initState = (m: Material | null): FormState => ({
+    nom: m?.nom ?? '',
+    marque: m?.marque ?? '',
+    categorie: m?.categorie ?? '',
+    refs: m ? buildRefs(m) : {},
+    confirmDelete: false,
+  });
+
+  const reducer = (state: FormState, action: FormAction): FormState => {
+    switch (action.type) {
+      case 'reset':
+        return initState(action.material);
+      case 'setNom':
+        return { ...state, nom: action.value };
+      case 'setMarque':
+        return { ...state, marque: action.value };
+      case 'setCategorie':
+        return { ...state, categorie: action.value };
+      case 'setRef':
+        return { ...state, refs: { ...state.refs, [action.supplier]: action.value } };
+      case 'setConfirmDelete':
+        return { ...state, confirmDelete: action.value };
     }
-    setRefs(r);
-    setConfirmDelete(false);
-  }, [material]);
+  };
+
+  const [form, dispatch] = useReducer(reducer, material, initState);
+  const { nom, marque, categorie, refs, confirmDelete } = form;
+
+  // Reset form whenever the edited material changes
+  useEffect(() => {
+    if (material) dispatch({ type: 'reset', material });
+  }, [material?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = useCallback(() => {
     if (!material || !nom.trim()) return;
@@ -63,7 +95,7 @@ export function EditMaterialModal({
   const handleDelete = useCallback(() => {
     if (!material) return;
     if (!confirmDelete) {
-      setConfirmDelete(true);
+      dispatch({ type: 'setConfirmDelete', value: true });
       return;
     }
     onDelete(material.id);
@@ -118,7 +150,7 @@ export function EditMaterialModal({
             <label className="block text-xs font-medium text-gray-700 mb-1">Nom *</label>
             <input
               value={nom}
-              onChange={(e) => setNom(e.target.value)}
+              onChange={(e) => dispatch({ type: 'setNom', value: e.target.value })}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
               placeholder="Nom du produit"
             />
@@ -129,7 +161,7 @@ export function EditMaterialModal({
               <label className="block text-xs font-medium text-gray-700 mb-1">Marque</label>
               <input
                 value={marque}
-                onChange={(e) => setMarque(e.target.value)}
+                onChange={(e) => dispatch({ type: 'setMarque', value: e.target.value })}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                 placeholder="ex: Legrand"
               />
@@ -138,7 +170,7 @@ export function EditMaterialModal({
               <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
               <input
                 value={categorie}
-                onChange={(e) => setCategorie(e.target.value)}
+                onChange={(e) => dispatch({ type: 'setCategorie', value: e.target.value })}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                 placeholder="ex: Prise de courant"
               />
@@ -156,7 +188,9 @@ export function EditMaterialModal({
                   <span className="text-xs text-gray-500 w-36 shrink-0">{SUPPLIER_LABELS[s]}</span>
                   <input
                     value={refs[s] ?? ''}
-                    onChange={(e) => setRefs((r) => ({ ...r, [s]: e.target.value }))}
+                    onChange={(e) =>
+                      dispatch({ type: 'setRef', supplier: s, value: e.target.value })
+                    }
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     placeholder="référence ou vide"
                   />

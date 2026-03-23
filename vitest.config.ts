@@ -14,12 +14,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'tools/lib/**/*.test.ts'],
-    // Adapter and tools tests run in Node (no window) — keeps CORS proxy logic untriggered.
-    // React component/hook tests stay in jsdom.
-    environmentMatchGlobs: [
-      ['src/adapters/**', 'node'],
-      ['tools/lib/**', 'node'],
-    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

@@ -1,42 +1,39 @@
 import js from '@eslint/js';
 import globals from 'globals';
-import pluginVue from 'eslint-plugin-vue';
 import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
 
-export default [
-  { languageOptions: { globals: globals.browser } },
+export default tseslint.config(
+  { ignores: ['dist/**', 'coverage/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/essential'],
+  reactHooks.configs.flat['recommended-latest'],
   {
-    files: ['src/**/*.{js,mjs,jsx,ts,tsx,vue}'],
+    files: ['src/**/*.{ts,tsx}', 'tools/**/*.ts'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      parser: tseslint.parser,
       parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
+        ecmaFeatures: { jsx: true },
       },
       globals: {
         ...globals.browser,
         ...globals.node,
       },
     },
+    plugins: {
+      'react-refresh': reactRefresh,
+    },
     rules: {
-      'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-      'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-      'no-unused-vars': 'off',
+      'no-console': 'off',
+      'no-debugger': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
       }],
-      '@typescript-eslint/explicit-function-return-types': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
-      'vue/multi-word-component-names': 'off',
-      'vue/no-v-html': 'warn',
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
-];
-
+);

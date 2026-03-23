@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * src/adapters/rexel.test.ts
  *
@@ -231,6 +232,32 @@ describe('RexelAdapter', () => {
     it('throws NETWORK_ERROR on non-axios error', async () => {
       const spy = vi.spyOn(axios, 'post').mockRejectedValueOnce(new TypeError('plain error'));
       await expect(adapter.getPrice(SKU)).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+      spy.mockRestore();
+    });
+
+    it('throws PARSE_ERROR on HTTP 400 with response data', async () => {
+      server.use(
+        http.post(API_URL, () =>
+          HttpResponse.json({ message: 'Failed to read request' }, { status: 400 })
+        )
+      );
+      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({
+        code: 'PARSE_ERROR',
+        retryable: false,
+      });
+    });
+
+    it('throws PARSE_ERROR on HTTP 400 with null response data (covers ?? {} branch)', async () => {
+      const spy = vi.spyOn(axios, 'post').mockRejectedValueOnce(
+        Object.assign(new Error('Request failed with status code 400'), {
+          isAxiosError: true,
+          response: { status: 400, data: null },
+        })
+      );
+      await expect(adapter.getPrice(SKU)).rejects.toMatchObject({
+        code: 'PARSE_ERROR',
+        retryable: false,
+      });
       spy.mockRestore();
     });
 

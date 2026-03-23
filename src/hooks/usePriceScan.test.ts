@@ -12,18 +12,22 @@ import type { SupplierPrice } from '@/types/price';
 const mockGetPrice = vi.fn();
 
 vi.mock('@/adapters/materielelectrique', () => ({
-  MaterielElectriqueAdapter: vi.fn().mockImplementation(() => ({ getPrice: mockGetPrice })),
+  MaterielElectriqueAdapter: vi.fn().mockImplementation(function () {
+    return { getPrice: mockGetPrice };
+  }),
   DEFAULT_SCRAPING_CONFIG: { delayBetweenRequestsMs: 0, requestTimeoutMs: 5000, userAgent: 'test' },
 }));
 
 vi.mock('@/adapters/rexel', () => ({
-  RexelAdapter: vi.fn().mockImplementation(() => ({ getPrice: vi.fn().mockResolvedValue(null) })),
+  RexelAdapter: vi.fn().mockImplementation(function () {
+    return { getPrice: vi.fn().mockResolvedValue(null) };
+  }),
 }));
 
 vi.mock('@/adapters/bricodepot', () => ({
-  BricodepotAdapter: vi
-    .fn()
-    .mockImplementation(() => ({ getPrice: vi.fn().mockResolvedValue(null) })),
+  BricodepotAdapter: vi.fn().mockImplementation(function () {
+    return { getPrice: vi.fn().mockResolvedValue(null) };
+  }),
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -220,7 +224,9 @@ describe('usePriceScan', () => {
   it('uses rexel adapter when rexelCreds are provided', async () => {
     const { RexelAdapter } = await import('@/adapters/rexel');
     const mockRexelGetPrice = vi.fn().mockResolvedValue(MOCK_PRICE);
-    vi.mocked(RexelAdapter).mockImplementation(() => ({ getPrice: mockRexelGetPrice }) as never);
+    vi.mocked(RexelAdapter).mockImplementation(function () {
+      return { getPrice: mockRexelGetPrice };
+    } as never);
 
     const rexelMaterial: Material = {
       id: 'rexel-mat',
@@ -292,5 +298,71 @@ describe('usePriceScan', () => {
     } finally {
       vi.spyOn(Date, 'now').mockRestore();
     }
+  });
+
+  it('silently skips (else branch) when supplier id is not recognised', async () => {
+    // Exercises the `else { return; }` path for an unknown supplier
+    const unknownSupplierMaterial: Material = {
+      id: 'unknown-sup-mat',
+      nom: 'Unknown Supplier Product',
+      marque: 'Brand',
+      categorie: 'Cat',
+      references_fournisseurs: { unknownSupplier: 'SOME-REF' } as Record<string, string | null>,
+    };
+    const { result } = renderHook(() => usePriceScan());
+    // Should complete without throwing even though supplier is not handled
+    await act(async () => {
+      await result.current.startScan([unknownSupplierMaterial]);
+    });
+    expect(result.current.scanning).toBe(false);
+  });
+
+  it('fetches bricodepot price when bricodepot ref and cookies are provided', async () => {
+    // Exercises the `else if (s.id === 'bricodepot')` branch (lines 173-174)
+    const { BricodepotAdapter } = await import('@/adapters/bricodepot');
+    const mockBricodepotGetPrice = vi.fn().mockResolvedValue(MOCK_PRICE);
+    vi.mocked(BricodepotAdapter).mockImplementation(function () {
+      return { getPrice: mockBricodepotGetPrice };
+    } as never);
+
+    const bricodepotMaterial: Material = {
+      id: 'brico-mat',
+      nom: 'Brico Only',
+      marque: 'Brand',
+      categorie: 'Cat',
+      references_fournisseurs: { bricodepot: 'BRICO-REF' },
+    };
+
+    const { result } = renderHook(() => usePriceScan());
+    await act(async () => {
+      await result.current.startScan([bricodepotMaterial], undefined, undefined, 'JSESSIONID=abc');
+    });
+
+    expect(mockBricodepotGetPrice).toHaveBeenCalledWith('BRICO-REF');
+    expect(result.current.prices['brico-mat']['bricodepot'].status).toBe('success');
+  });
+
+  it('skips unknown supplier via else { return } branch by mocking SUPPLIERS', async () => {
+    // Temporarily inject a 4th supplier so the else branch is reachable
+    const suppliersMod = await import('@/config/suppliers');
+    const original = suppliersMod.SUPPLIERS.slice();
+    suppliersMod.SUPPLIERS.push({ id: 'unknown4', label: 'Unknown', color: '#000' });
+
+    const mat: Material = {
+      id: 'unk-mat',
+      nom: 'Test',
+      marque: 'B',
+      categorie: 'C',
+      references_fournisseurs: { unknown4: 'REF-X' },
+    };
+    const { result } = renderHook(() => usePriceScan());
+    await act(async () => {
+      await result.current.startScan([mat]);
+    });
+    expect(result.current.scanning).toBe(false);
+
+    // Restore SUPPLIERS
+    suppliersMod.SUPPLIERS.length = 0;
+    original.forEach((s) => suppliersMod.SUPPLIERS.push(s));
   });
 });

@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
 declare module 'virtual:*' {
-  const mod: Record<string, any>;
+  const mod: Record<string, unknown>;
   export default mod;
 }
