@@ -10,7 +10,9 @@
  */
 
 import type { PriceTier } from '@/types/price';
-import { MATERIELELECTRIQUE_VAT_RATE } from '@/config/vatRates';
+import { SUPPLIERS } from '@/config/suppliers';
+
+const VAT_RATE = SUPPLIERS.find((s) => s.id === 'materielelectrique')!.vatRate;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -106,10 +108,10 @@ export function extractTiersFromHtml(html: string): PriceTier[] | undefined {
       prix_ht = parseFloat(htMatch[1].replace(',', '.'));
       prix_ttc = ttcMatch
         ? parseFloat(ttcMatch[1].replace(',', '.'))
-        : Math.round(prix_ht * (1 + MATERIELELECTRIQUE_VAT_RATE) * 100) / 100;
+        : Math.round(prix_ht * (1 + VAT_RATE) * 100) / 100;
     } else {
       prix_ttc = parseFloat(ttcMatch![1].replace(',', '.'));
-      prix_ht = Math.round((prix_ttc / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 10000) / 10000;
+      prix_ht = Math.round((prix_ttc / (1 + VAT_RATE)) * 10000) / 10000;
     }
 
     // Discount percentage — last <td> of the row, "-" for the base tier

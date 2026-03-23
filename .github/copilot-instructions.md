@@ -43,8 +43,8 @@ Unix-specific commands like `rm`, `tail`,  or `mv`.
 | Path              | Purpose                                                      |
 |-------------------|--------------------------------------------------------------|
 | `src/adapters/`   | One adapter per supplier — `getPrice(ref)` → `SupplierPrice` |
-| `src/hooks/`      | React hooks (`usePriceScan`, `useRexelAuth`, …)              |
 | `src/components/` | UI components                                                |
+| `src/hooks/`      | React hooks (`usePriceScan`, `useRexelAuth`, …)              |
 | `src/types/`      | Shared TypeScript interfaces                                 |
 | `tools/`          | CLI dev tools (`probe-rexel.ts`, `add-to-catalogue.ts`, …)   |
 | `catalogue/`      | Static JSON catalogues                                       |
@@ -57,6 +57,8 @@ Unix-specific commands like `rm`, `tail`,  or `mv`.
 - Named exports only — no default exports
 - Functional React components with explicit TypeScript props interfaces
 - No class components
+- **No backward compatibility** — this is an active dev product. Delete old code immediately,
+  never add `@deprecated` tags or legacy shims. Update all callers in the same commit.
 
 ## Architecture
 

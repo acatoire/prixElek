@@ -15,6 +15,9 @@ import { FetchError } from '@/types/error';
 import type { SupplierPrice } from '@/types/price';
 import type { ScrapingConfig } from './materielelectrique';
 import { loadScrapingConfig } from './materielelectrique';
+import { SUPPLIERS } from '@/config/suppliers';
+
+const VAT_RATE = SUPPLIERS.find((s) => s.id === 'bricodepot')!.vatRate;
 
 const BASE_URL = 'https://www.bricodepot.fr';
 
@@ -26,8 +29,6 @@ function getProductUrl(reference: string): string {
   }
   return `${BASE_URL}/${reference}`;
 }
-
-export const BRICODEPOT_VAT_RATE = 0.2;
 
 const BROWSER_HEADERS = {
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -208,7 +209,7 @@ export class BricodepotAdapter extends SupplierAdapter {
   }
 
   private buildSupplierPrice(priceTtc: number, html: string): SupplierPrice {
-    const prix_ht = Math.round((priceTtc / (1 + BRICODEPOT_VAT_RATE)) * 100) / 100;
+    const prix_ht = Math.round((priceTtc / (1 + VAT_RATE)) * 100) / 100;
     const outOfStock =
       html.includes('bd-Stock--unavailable') ||
       html.includes('Rupture de stock') ||

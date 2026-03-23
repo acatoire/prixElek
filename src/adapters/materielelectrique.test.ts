@@ -10,12 +10,11 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axios from 'axios';
-import {
-  MaterielElectriqueAdapter,
-  loadScrapingConfig,
-  MATERIELELECTRIQUE_VAT_RATE,
-} from './materielelectrique';
+import { MaterielElectriqueAdapter, loadScrapingConfig } from './materielelectrique';
+import { SUPPLIERS } from '@/config/suppliers';
 import { FetchError } from '@/types/error';
+
+const MATERIELELECTRIQUE_VAT_RATE = SUPPLIERS.find((s) => s.id === 'materielelectrique')!.vatRate;
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 

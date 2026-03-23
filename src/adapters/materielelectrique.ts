@@ -23,6 +23,9 @@ import { SupplierAdapter } from './base';
 import { FetchError } from '@/types/error';
 import type { SupplierPrice } from '@/types/price';
 import { extractTiersFromHtml } from '@/services/extractProduct';
+import { SUPPLIERS } from '@/config/suppliers';
+
+const VAT_RATE = SUPPLIERS.find((s) => s.id === 'materielelectrique')!.vatRate;
 
 const BASE_URL = 'https://www.materielelectrique.com';
 
@@ -39,16 +42,6 @@ function getBaseUrl(): string {
   }
   return BASE_URL;
 }
-
-// ── Tax rate ──────────────────────────────────────────────────────────────────
-
-/**
- * materielelectrique.com publishes prices TTC (taxes included).
- * We convert to HT (excluding VAT) before storing, so that all supplier prices
- * are comparable on the same basis (Rexel returns HT prices natively).
- * Standard French VAT rate for electrical equipment: 20 %.
- */
-export const MATERIELELECTRIQUE_VAT_RATE = 0.2;
 
 // ── Scraping config ───────────────────────────────────────────────────────────
 
@@ -310,7 +303,7 @@ export class MaterielElectriqueAdapter extends SupplierAdapter {
     }
 
     // materielelectrique.com prices are TTC — convert to HT for comparison with Rexel
-    const prix_ht = Math.round((priceTtc / (1 + MATERIELELECTRIQUE_VAT_RATE)) * 100) / 100;
+    const prix_ht = Math.round((priceTtc / (1 + VAT_RATE)) * 100) / 100;
 
     const availabilityIri = offer.availability ?? '';
     const availability = AVAILABILITY_MAP[availabilityIri] ?? 'Unknown';

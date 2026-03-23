@@ -346,7 +346,7 @@ describe('usePriceScan', () => {
     // Temporarily inject a 4th supplier so the else branch is reachable
     const suppliersMod = await import('@/config/suppliers');
     const original = suppliersMod.SUPPLIERS.slice();
-    suppliersMod.SUPPLIERS.push({ id: 'unknown4', label: 'Unknown', color: '#000' });
+    suppliersMod.SUPPLIERS.push({ id: 'unknown4', label: 'Unknown', color: '#000', vatRate: 0.2 });
 
     const mat: Material = {
       id: 'unk-mat',

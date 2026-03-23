@@ -9,8 +9,11 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { BricodepotAdapter, BRICODEPOT_VAT_RATE, type BricodepotConfig } from './bricodepot';
+import { BricodepotAdapter, type BricodepotConfig } from './bricodepot';
+import { SUPPLIERS } from '@/config/suppliers';
 import { FetchError } from '@/types/error';
+
+const BRICODEPOT_VAT_RATE = SUPPLIERS.find((s) => s.id === 'bricodepot')!.vatRate;
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
