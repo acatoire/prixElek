@@ -23,14 +23,20 @@ Unix-specific commands like `rm`, `tail`,  or `mv`.
 
 ## After every code change
 
-**Always run `npm run build` after making changes** — it runs `tsc -b` (strict type-check across all
-files including test files) followed by `vite build`. Tests alone (`npx vitest run`) do not catch
-TypeScript errors in test files.
+**Always run the following three commands after making changes**, in order:
 
-```bash
-npm run build   # must pass with 0 errors before considering a task done
-npx vitest run  # 129 tests, all must pass
-```
+1. **Prettier** — auto-format all edited files:
+   ```bash
+   npx prettier --write "src/**/*.{ts,tsx,css}" "tools/**/*.ts"
+   ```
+2. **Build** — strict type-check + bundle (`tsc -b` then `vite build`). Tests alone do not catch TypeScript errors in test files:
+   ```bash
+   npm run build   # must pass with 0 errors before considering a task done
+   ```
+3. **Tests** — all must pass:
+   ```bash
+   npx vitest run
+   ```
 
 ## Project structure
 
