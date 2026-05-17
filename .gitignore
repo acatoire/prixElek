@@ -137,3 +137,7 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Scraping smoke-test credentials — never commit real tokens
+tests/integration/test-config.json
+

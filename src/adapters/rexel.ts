@@ -49,6 +49,11 @@ export function extractApiKey(jwt: string): string {
   return decodeRexelToken(jwt).api_key ?? '';
 }
 
+/** Strip an optional "Bearer " prefix from a token string (case-insensitive). */
+export function stripBearerPrefix(token: string): string {
+  return token.trim().replace(/^Bearer\s+/i, '');
+}
+
 // ── Credentials ───────────────────────────────────────────────────────────────
 
 /**
@@ -96,8 +101,8 @@ export class RexelAdapter extends SupplierAdapter {
 
   constructor(credentials: RexelCredentials) {
     super();
-    this.token = credentials.token;
-    this.accountId = extractAccountId(credentials.token);
+    this.token = stripBearerPrefix(credentials.token);
+    this.accountId = extractAccountId(this.token);
     this.branchId = credentials.branchId;
     this.zipcode = credentials.zipcode;
     this.city = credentials.city;

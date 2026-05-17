@@ -1,0 +1,31 @@
+{
+  "_comment": "Copy this file to test-config.json and fill in real credentials. test-config.json is gitignored — NEVER commit it.",
+  "_doc": "See README-SCRAPING.md for instructions on how to obtain each credential.",
+
+  "rexel": {
+    "_comment": "JWT obtained from DevTools → Network → any /api/v3/ request → Authorization header (strip 'Bearer ').",
+    "token": "YOUR_REXEL_JWT_HERE",
+    "branchId": "4413",
+    "zipcode": "44880",
+    "city": "SAUTRON",
+    "sku": "70569480",
+    "expectedPriceMin": 15,
+    "expectedPriceMax": 35
+  },
+
+  "bricodepot": {
+    "_comment": "Cookies expire after a few hours — see README-SCRAPING.md §Bricodepot. Use the 🍪 button in the prixElek UI to refresh.",
+    "cookies": "JSESSIONID=…; DYN_USER_ID=…; f5avr…=…",
+    "pageSlug": "catalogue/cable-electrique-r2v-3g25-mm-noir-100-m/prod10739",
+    "expectedPriceMin": 180,
+    "expectedPriceMax": 420
+  },
+
+  "materielelectrique": {
+    "_comment": "No auth needed — public prices. pageSlug is the URL path on materielelectrique.com (must end with -p-<digits>).",
+    "pageSlug": "prise-de-courant-legrand-celiane-4x2p-t-p-297691",
+    "reference": "LEG067128",
+    "expectedPriceMin": 12,
+    "expectedPriceMax": 28
+  }
+}

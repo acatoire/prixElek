@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Integration Smoke Tests" type="JavaScriptTestRunnerVitest">
+    <option name="vitest-js" value="$PROJECT_DIR$/node_modules/vitest/vitest.mjs" />
+    <option name="config-file" value="$PROJECT_DIR$/tests/integration/vitest.config.integration.ts" />
+    <option name="working-dir" value="$PROJECT_DIR$" />
+    <option name="additionalParams" value="--run" />
+    <method v="2" />
+  </configuration>
+</component>
+

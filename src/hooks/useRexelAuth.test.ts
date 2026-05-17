@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * src/hooks/useRexelAuth.test.ts
  */

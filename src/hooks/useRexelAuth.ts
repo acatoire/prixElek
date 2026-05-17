@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { extractAccountId, type RexelCredentials } from '@/adapters/rexel';
+import { extractAccountId, stripBearerPrefix, type RexelCredentials } from '@/adapters/rexel';
 
 const STORAGE_KEY_TOKEN = 'prixelek_rexel_token';
 const STORAGE_KEY_BRANCH = 'prixelek_rexel_branchId';
@@ -36,7 +36,7 @@ export function useRexelAuth(): UseRexelAuthReturn {
   const [city, setCity] = useState<string>(() => localStorage.getItem(STORAGE_KEY_CITY) ?? '');
 
   const saveCredentials = useCallback((credentials: RexelCredentials) => {
-    const cleanToken = credentials.token.trim();
+    const cleanToken = stripBearerPrefix(credentials.token);
     const cleanBranch = credentials.branchId.trim();
     const cleanZip = credentials.zipcode.trim();
     const cleanCity = credentials.city.trim();

@@ -2,7 +2,7 @@
  * src/components/RexelLoginModal.tsx
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import { extractAccountId, type RexelCredentials } from '@/adapters/rexel';
+import { extractAccountId, stripBearerPrefix, type RexelCredentials } from '@/adapters/rexel';
 
 interface RexelLoginModalProps {
   currentToken: string;
@@ -38,7 +38,7 @@ export function RexelLoginModal({
   }, [onClose]);
 
   const handleSave = useCallback(() => {
-    const cleanToken = draft.trim().replace(/^Bearer\s+/i, '');
+    const cleanToken = stripBearerPrefix(draft);
     const cleanBranch = draftBranch.trim();
     const cleanZip = draftZip.trim();
     const cleanCity = draftCity.trim();
@@ -48,7 +48,7 @@ export function RexelLoginModal({
   }, [draft, draftBranch, draftZip, draftCity, onSave, onClose]);
 
   const hasToken = currentToken.length > 0;
-  const draftClean = draft.trim().replace(/^Bearer\s+/i, '');
+  const draftClean = stripBearerPrefix(draft);
   const draftAccountId = draftClean ? extractAccountId(draftClean) : '';
   const draftValid =
     draftAccountId.length > 0 &&
@@ -106,7 +106,7 @@ export function RexelLoginModal({
               </li>
               <li>
                 Dans <code className="bg-blue-100 px-0.5 rounded">Authorization</code>, copiez la
-                valeur après <strong>Bearer </strong>
+                valeur — avec ou sans le préfixe <strong>Bearer </strong>
               </li>
             </ol>
           </div>
@@ -116,14 +116,19 @@ export function RexelLoginModal({
         <div className="px-6 py-4 space-y-4">
           {/* Token */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-gray-700">Token Bearer</label>
+            <label className="block text-xs font-medium text-gray-700">
+              Token Bearer{' '}
+              <span className="text-gray-400 font-normal">
+                (le JWT seul ou avec le préfixe «&nbsp;Bearer&nbsp;»)
+              </span>
+            </label>
             <div className="relative">
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 rows={3}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                placeholder="eyJhbGciOiJSUzI1NiJ9..."
+                placeholder="eyJhbGciOiJSUzI1NiJ9… ou Bearer eyJ…"
                 style={{ filter: showToken ? 'none' : 'blur(3px)' }}
               />
               <button

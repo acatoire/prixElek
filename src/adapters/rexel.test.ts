@@ -16,6 +16,7 @@ import {
   extractAccountId,
   extractWebshopId,
   extractApiKey,
+  stripBearerPrefix,
 } from './rexel';
 
 const SKU = '70569480';
@@ -134,6 +135,32 @@ describe('RexelAdapter', () => {
     });
   });
 
+  describe('stripBearerPrefix', () => {
+    it('strips "Bearer " prefix (standard casing)', () => {
+      expect(stripBearerPrefix('Bearer eyJtoken')).toBe('eyJtoken');
+    });
+
+    it('strips "bearer " prefix (lowercase)', () => {
+      expect(stripBearerPrefix('bearer eyJtoken')).toBe('eyJtoken');
+    });
+
+    it('strips "BEARER " prefix (uppercase)', () => {
+      expect(stripBearerPrefix('BEARER eyJtoken')).toBe('eyJtoken');
+    });
+
+    it('returns the token unchanged when no prefix is present', () => {
+      expect(stripBearerPrefix('eyJtoken')).toBe('eyJtoken');
+    });
+
+    it('trims surrounding whitespace', () => {
+      expect(stripBearerPrefix('  Bearer eyJtoken  ')).toBe('eyJtoken');
+    });
+
+    it('returns empty string for empty input', () => {
+      expect(stripBearerPrefix('')).toBe('');
+    });
+  });
+
   it('has correct supplierId', () => {
     expect(adapter.supplierId).toBe('rexel');
   });
@@ -186,6 +213,13 @@ describe('RexelAdapter', () => {
       mockApi(body);
       const price = await adapter.getPrice(SKU);
       expect(price.prix_ht).toBe(21.05);
+    });
+
+    it('accepts a "Bearer <token>" string and strips the prefix', async () => {
+      mockApi(makeResponse());
+      const adapterWithPrefix = new RexelAdapter({ ...CREDS, token: `Bearer ${TOKEN}` });
+      const price = await adapterWithPrefix.getPrice(SKU);
+      expect(price.prix_ht).toBe(21.048);
     });
   });
 
